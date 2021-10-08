@@ -19,6 +19,7 @@
 
 from adapt.intent import IntentBuilder
 from pkg_resources import get_distribution, DistributionNotFound
+from neon_utils import LOG
 from neon_utils.skills import NeonSkill
 
 
@@ -27,12 +28,15 @@ class UpdateSkill(NeonSkill):
         super(UpdateSkill, self).__init__(name="NeonUpdates")
         if self.server:
             raise NotImplementedError("Update skill disabled for server use")
-        try:
-            self.core_package_version = get_distribution("neon-core").version
-        except DistributionNotFound:
-            raise NotImplementedError("neon-core not found, disabling skill")
+        self.core_package_version = None
 
     def initialize(self):
+        try:
+            self.core_package_version = get_distribution(self.settings["core_package"]).version
+        except DistributionNotFound:
+            LOG.warning(f"neon-core not found; other core packages not currently supported")
+            self.core_package_version = ""
+
         do_update = IntentBuilder("update_neon").require("update-neon").build()
         self.register_intent(do_update, self.handle_update_neon)
 

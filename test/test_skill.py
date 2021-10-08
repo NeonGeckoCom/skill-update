@@ -62,6 +62,7 @@ class TestSkill(unittest.TestCase):
         from neon_utils.skills import NeonSkill
 
         self.assertIsInstance(self.skill, NeonSkill)
+        self.assertEqual(self.skill.settings["core_package"], "neon-core")
         self.assertIsInstance(self.skill.core_package_version, str)
 
     def test_handle_update_neon(self):
