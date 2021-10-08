@@ -17,10 +17,11 @@
 # US Patents 2008-2021: US7424516, US20140161250, US20140177813, US8638908, US8068604, US8553852, US10530923, US10530924
 # China Patent: CN102017585  -  Europe Patent: EU2156652  -  Patents Pending
 
-from adapt.intent import IntentBuilder
 from pkg_resources import get_distribution, DistributionNotFound
 from neon_utils import LOG
 from neon_utils.skills import NeonSkill
+from adapt.intent import IntentBuilder
+from mycroft import intent_handler
 
 
 class UpdateSkill(NeonSkill):
@@ -37,9 +38,6 @@ class UpdateSkill(NeonSkill):
             LOG.warning(f"neon-core not found; other core packages not currently supported")
             self.core_package_version = ""
 
-        do_update = IntentBuilder("update_neon").require("update-neon").build()
-        self.register_intent(do_update, self.handle_update_neon)
-
         # TODO: Intent to get current core version, allow/deny alphas? DM
 
         if self.local_config.get("prefFlags", {}).get("notifyRelease", False) and not self.server:
@@ -53,6 +51,7 @@ class UpdateSkill(NeonSkill):
         # TODO: This should check PyPI for versions and check latest alpha/non-alpha versions against this core DM
         pass
 
+    @intent_handler(IntentBuilder("update_neon").require("update-neon"))
     def handle_update_neon(self, message):
         """
         Checks the version file on the git repository associated with this installation and compares to local version.
