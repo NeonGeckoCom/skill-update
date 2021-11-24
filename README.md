@@ -25,9 +25,6 @@ Use the [link](https://neongecko.com/ContactUs) or [submit an issue on GitHub](h
 **Information**
 
 ## Tags
-#NeonGecko
+#NeonGecko Original
 #NeonAI
-#Demo
-
-
-
+#Update
