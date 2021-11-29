@@ -26,16 +26,20 @@
         "arm"
     ],
     "branch": "master",
-    "license": "NeonAI License v1.0",
+    "license": "BSD-3-Clause",
     "icon": "logo.svg",
     "category": "Information",
     "categories": [
         "Information"
     ],
     "tags": [
-        "NeonGecko",
+        "NeonGecko Original",
         "NeonAI",
-        "Demo"
+        "Update"
+    ],
+    "credits": [
+        "NeonDaniel",
+        "NeonGeckoCom"
     ],
     "skillname": "Neon Updates",
     "authorname": "NeonGeckoCom",

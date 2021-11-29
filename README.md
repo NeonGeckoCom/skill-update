@@ -18,17 +18,13 @@ check for updates at startup and notify the user that updates are available for 
 Use the [link](https://neongecko.com/ContactUs) or [submit an issue on GitHub](https://help.github.com/en/articles/creating-an-issue)
 
 ## Credits
-
-@NeonGeckoCom
-@NeonDaniel
+[NeonDaniel](https://github.com/NeonDaniel)
+[NeonGeckoCom](https://github.com/NeonGeckoCom)
 
 ## Category
 **Information**
 
 ## Tags
-#NeonGecko
+#NeonGecko Original
 #NeonAI
-#Demo
-
-
-
+#Update
