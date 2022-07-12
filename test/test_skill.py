@@ -25,15 +25,12 @@
 # LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE,  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import os
+
 import shutil
 import unittest
-from os import mkdir
-
 import pytest
 
-from time import sleep
-from copy import deepcopy
+from os import mkdir
 from os.path import dirname, join, exists
 from mock import Mock
 from mycroft_bus_client import Message
