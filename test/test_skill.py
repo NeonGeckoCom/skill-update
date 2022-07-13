@@ -72,9 +72,10 @@ class TestSkill(unittest.TestCase):
         self.assertIsInstance(self.skill.core_package_version, str)
 
     def test_handle_update_neon(self):
-        message = Message("recognizer_loop:utterance", context={"neon_should_respond": True})
+        message = Message("recognizer_loop:utterance",
+                          context={"neon_should_respond": True})
         self.skill.handle_update_neon(message)
-        self.skill.speak_dialog.assert_called_with("check-updates")
+        self.skill.speak_dialog.assert_called_with("check_updates")
 
 
 if __name__ == '__main__':
