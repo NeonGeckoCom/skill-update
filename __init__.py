@@ -36,8 +36,6 @@ from mycroft import intent_handler
 class UpdateSkill(NeonSkill):
     def __init__(self):
         super(UpdateSkill, self).__init__(name="NeonUpdates")
-        if self.server:
-            raise NotImplementedError("Update skill disabled for server use")
         self.core_package_version = None
 
     def initialize(self):
@@ -48,8 +46,7 @@ class UpdateSkill(NeonSkill):
             self.core_package_version = ""
 
         # TODO: Intent to get current core version, allow/deny alphas? DM
-
-        if self.local_config.get("prefFlags", {}).get("notifyRelease", False) and not self.server:
+        if self.config_core["server"].get("update", False):
             self.bus.once('mycroft.ready', self._check_latest_release)
 
     def _check_latest_release(self, message):
@@ -60,7 +57,7 @@ class UpdateSkill(NeonSkill):
         # TODO: This should check PyPI for versions and check latest alpha/non-alpha versions against this core DM
         pass
 
-    @intent_handler(IntentBuilder("update_neon").require("update-neon"))
+    @intent_handler(IntentBuilder("UpdateNeon").require("update_neon"))
     def handle_update_neon(self, message):
         """
         Checks the version file on the git repository associated with this installation and compares to local version.
@@ -68,8 +65,8 @@ class UpdateSkill(NeonSkill):
         be given the option to start an update in cases where there is an update available OR no new release available.
         :param message: message object associated with request
         """
-        if self.neon_in_request(message) and not self.server:
-            self.speak_dialog("check-updates")
+        if self.neon_in_request(message):
+            self.speak_dialog("check_updates")
 
 
 def create_skill():

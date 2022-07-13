@@ -26,57 +26,29 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE,  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import shutil
-import unittest
-import pytest
+import fileinput
+from os.path import join, dirname
 
-from os import mkdir
-from os.path import dirname, join, exists
-from mock import Mock
-from mycroft_bus_client import Message
-from ovos_utils.messagebus import FakeBus
+with open(join(dirname(__file__), "version.py"), "r", encoding="utf-8") as v:
+    for line in v.readlines():
+        if line.startswith("__version__"):
+            if '"' in line:
+                version = line.split('"')[1]
+            else:
+                version = line.split("'")[1]
 
+if "a" not in version:
+    parts = version.split('.')
+    parts[-1] = str(int(parts[-1]) + 1)
+    version = '.'.join(parts)
+    version = f"{version}a0"
+else:
+    post = version.split("a")[1]
+    new_post = int(post) + 1
+    version = version.replace(f"a{post}", f"a{new_post}")
 
-class TestSkill(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        from mycroft.skills.skill_loader import SkillLoader
-
-        bus = FakeBus()
-        bus.run_in_thread()
-        skill_loader = SkillLoader(bus, dirname(dirname(__file__)))
-        skill_loader.load()
-        cls.skill = skill_loader.instance
-        cls.test_fs = join(dirname(__file__), "skill_fs")
-        if not exists(cls.test_fs):
-            mkdir(cls.test_fs)
-        cls.skill.settings_write_path = cls.test_fs
-        cls.skill.file_system.path = cls.test_fs
-        cls.skill._init_settings()
-        cls.skill.initialize()
-        # Override speak and speak_dialog to test passed arguments
-        cls.skill.speak = Mock()
-        cls.skill.speak_dialog = Mock()
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        shutil.rmtree(cls.test_fs)
-
-    def test_00_skill_init(self):
-        # Test any parameters expected to be set in init or initialize methods
-        from neon_utils.skills import NeonSkill
-
-        self.assertIsInstance(self.skill, NeonSkill)
-        self.assertEqual(self.skill.settings["core_package"], "neon-core")
-        self.assertIsInstance(self.skill.core_package_version, str)
-
-    def test_handle_update_neon(self):
-        message = Message("recognizer_loop:utterance",
-                          context={"neon_should_respond": True})
-        self.skill.handle_update_neon(message)
-        self.skill.speak_dialog.assert_called_with("check_updates")
-
-
-if __name__ == '__main__':
-    pytest.main()
+for line in fileinput.input(join(dirname(__file__), "version.py"), inplace=True):
+    if line.startswith("__version__"):
+        print(f"__version__ = \"{version}\"")
+    else:
+        print(line.rstrip('\n'))
