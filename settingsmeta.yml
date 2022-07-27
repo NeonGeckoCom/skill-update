@@ -1,0 +1,8 @@
+skillMetadata:
+  sections:
+    - name: Core
+      fields:
+        - name: core_package
+          type: text
+          label: Core Package Name
+          value: "neon-core"
