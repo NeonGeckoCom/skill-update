@@ -1,1 +1,4 @@
-neon-utils>=0.5.7,<2.0.0
+neon-utils~=1.1
+ovos-plugin-manager~=0.0.20
+ovos-skills-manger>=0.0.12a1
+# TODO: phal plugin dependency
