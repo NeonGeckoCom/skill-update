@@ -58,17 +58,15 @@ class UpdateSkill(NeonSkill):
         Format a version spec into a speakable string
         """
         if 'a' in version:
-            version.replace('a', f' {self.translate("alpha")} ')
+            version = version.replace('a', f' {self.translate("alpha")} ')
         if '.' in version:
-            version.replace('.', f' {self.translate("point")} ')
+            version = version.replace('.', f' {self.translate("point")} ')
         return version
 
     @intent_file_handler("update_device.intent")
     def handle_update_neon(self, message):
         """
-        Checks the version file on the git repository associated with this installation and compares to local version.
-        If up to date, will check for a new release in the parent NeonGecko repository and notify user. User will
-        be given the option to start an update in cases where there is an update available OR no new release available.
+        Handle a user request to check for updates.
         :param message: message object associated with request
         """
         if get_user_prefs(message)['response_mode'].get('hesitation'):
