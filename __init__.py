@@ -48,6 +48,7 @@ class UpdateSkill(NeonSkill):
         """
         response = self.bus.wait_for_response(message.forward("neon.core_updater.check_update"))
         if response:
+            LOG.debug(f"Got response: {response.data}")
             self.current_ver = response.data.get("installed_version")
             self.latest_ver = response.data.get("new_version")
         else:
