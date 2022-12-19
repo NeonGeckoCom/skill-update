@@ -38,6 +38,10 @@ class UpdateSkill(NeonSkill):
         self.current_ver = None
         self.latest_ver = None
 
+    @property
+    def include_prerelease(self):
+        return self.settings.get("include_prerelease", False)
+
     def initialize(self):
         self.bus.once('mycroft.ready', self._check_latest_core_release)
 
@@ -46,7 +50,9 @@ class UpdateSkill(NeonSkill):
         Handles checking for a new release version
         :param message: message object associated with loaded emit
         """
-        response = self.bus.wait_for_response(message.forward("neon.core_updater.check_update"))
+        response = self.bus.wait_for_response(
+            message.forward("neon.core_updater.check_update",
+                            {'include_prerelease': self.include_prerelease}))
         if response:
             LOG.debug(f"Got response: {response.data}")
             self.current_ver = response.data.get("installed_version")
