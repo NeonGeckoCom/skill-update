@@ -50,7 +50,7 @@ class UpdateSkill(NeonSkill):
         if response:
             LOG.debug(f"Got response: {response.data}")
             self.current_ver = response.data.get("installed_version")
-            self.latest_ver = response.data.get("new_version")
+            self.latest_ver = response.get("latest_version") or response.data.get("new_version")
         else:
             LOG.error("No response from updater plugin")
 
