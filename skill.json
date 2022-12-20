@@ -13,6 +13,7 @@
     "systemDeps": false,
     "requirements": {
         "python": [
+            "neon-phal-plugin-core-updater~=0.0.1a0",
             "neon-utils~=1.1"
         ],
         "system": {},
