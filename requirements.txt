@@ -1,2 +1,2 @@
 neon-utils~=1.1
-# TODO: phal plugin dependency
+neon-phal-plugin-core-updater~=0.0.1a0
