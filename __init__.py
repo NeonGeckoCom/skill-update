@@ -26,47 +26,74 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE,  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from pkg_resources import get_distribution, DistributionNotFound
-from neon_utils import LOG
+from ovos_utils.log import LOG
 from neon_utils.skills import NeonSkill
-from adapt.intent import IntentBuilder
-from mycroft import intent_handler
+from neon_utils.user_utils import get_user_prefs
+from mycroft.skills import intent_file_handler
 
 
 class UpdateSkill(NeonSkill):
     def __init__(self):
         super(UpdateSkill, self).__init__(name="NeonUpdates")
-        self.core_package_version = None
+        self.current_ver = None
+        self.latest_ver = None
+
+    @property
+    def include_prerelease(self):
+        return self.settings.get("include_prerelease", False)
 
     def initialize(self):
-        try:
-            self.core_package_version = get_distribution(self.settings["core_package"]).version
-        except DistributionNotFound:
-            LOG.warning(f"neon-core not found; other core packages not currently supported")
-            self.core_package_version = ""
+        self.bus.once('mycroft.ready', self._check_latest_core_release)
 
-        # TODO: Intent to get current core version, allow/deny alphas? DM
-        if self.config_core["server"].get("update", False):
-            self.bus.once('mycroft.ready', self._check_latest_release)
-
-    def _check_latest_release(self, message):
+    def _check_latest_core_release(self, message):
         """
         Handles checking for a new release version
         :param message: message object associated with loaded emit
         """
-        # TODO: This should check PyPI for versions and check latest alpha/non-alpha versions against this core DM
-        pass
+        response = self.bus.wait_for_response(
+            message.forward("neon.core_updater.check_update",
+                            {'include_prerelease': self.include_prerelease}))
+        if response:
+            LOG.debug(f"Got response: {response.data}")
+            self.current_ver = response.data.get("installed_version")
+            self.latest_ver = response.data.get("latest_version") or response.data.get("new_version")
+        else:
+            LOG.error("No response from updater plugin")
 
-    @intent_handler(IntentBuilder("UpdateNeon").require("update_neon"))
+    def pronounce_version(self, version: str):
+        """
+        Format a version spec into a speakable string
+        """
+        if 'a' in version:
+            version = version.replace('a', f' {self.translate("alpha")} ')
+        if '.' in version:
+            version = version.replace('.', f' {self.translate("point")} ')
+        return version
+
+    @intent_file_handler("update_device.intent")
     def handle_update_neon(self, message):
         """
-        Checks the version file on the git repository associated with this installation and compares to local version.
-        If up to date, will check for a new release in the parent NeonGecko repository and notify user. User will
-        be given the option to start an update in cases where there is an update available OR no new release available.
+        Handle a user request to check for updates.
         :param message: message object associated with request
         """
-        if self.neon_in_request(message):
+        if get_user_prefs(message)['response_mode'].get('hesitation'):
             self.speak_dialog("check_updates")
+        self._check_latest_core_release(message)
+        if not all((self.current_ver, self.latest_ver)):
+            self.speak_dialog("check_error")
+        elif self.current_ver != self.latest_ver:
+            resp = self.ask_yesno("update_core",
+                                  {"new": self.pronounce_version(self.latest_ver),
+                                   "old": self.pronounce_version(self.current_ver)})
+            if resp == "yes":
+                self.speak_dialog("starting_update", wait=True)
+                self.bus.emit(message.forward("neon.core_updater.start_update",
+                                              {"version": self.latest_ver}))
+            else:
+                self.speak_dialog("not_updating")
+        else:
+            self.speak_dialog("up_to_date",
+                              {"version": self.pronounce_version(self.current_ver)})
 
 
 def create_skill():

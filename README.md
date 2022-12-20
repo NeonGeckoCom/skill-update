@@ -11,7 +11,8 @@ check for updates at startup and notify the user that updates are available for 
 
 ## Examples
 
-- "Neon check for updates"
+- Check for updates.
+- Do you have any updates?
 
 ## Contact Support
 
