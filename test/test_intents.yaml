@@ -30,3 +30,8 @@ en-us:
   - update my device
   - update my skills
   - update my skills software
+  update_configuration.intent:
+    - update configuration
+    - update my default configuration
+    - update your default configuration
+    - neon update the default config

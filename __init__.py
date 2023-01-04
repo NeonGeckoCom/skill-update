@@ -71,7 +71,7 @@ class UpdateSkill(NeonSkill):
         return version
 
     @intent_file_handler("update_device.intent")
-    def handle_update_neon(self, message):
+    def handle_update_device(self, message):
         """
         Handle a user request to check for updates.
         :param message: message object associated with request
@@ -94,6 +94,21 @@ class UpdateSkill(NeonSkill):
         else:
             self.speak_dialog("up_to_date",
                               {"version": self.pronounce_version(self.current_ver)})
+
+    @intent_file_handler("update_configuration.intent")
+    def handle_update_configuration(self, message):
+        """
+        Handle a user request to update default configuration
+        :param message: message object associated with request
+        """
+        resp = self.ask_yesno("ask_update_configuration")
+        if resp == "yes":
+            self.speak_dialog("starting_update", wait=True)
+            self.bus.emit(message.forward("neon.update_config",
+                                          {"skill_config": True,
+                                           "core_config": True}))
+        else:
+            self.speak_dialog("not_updating")
 
 
 def create_skill():
