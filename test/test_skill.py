@@ -90,19 +90,19 @@ class TestSkill(unittest.TestCase):
         self.skill.bus.on("neon.core_updater.start_update", start_update)
 
         # Version check error
-        self.skill.handle_update_neon(message)
+        self.skill.handle_update_device(message)
         self.skill.speak_dialog.assert_called_with("check_error")
 
         # Already updated
         installed_ver = new_ver = '1.1.1'
-        self.skill.handle_update_neon(message)
+        self.skill.handle_update_device(message)
         self.skill.speak_dialog.assert_called_with("up_to_date",
                                                    {"version": "1 point 1 point 1"})
 
         # Alpha update avaliable, declined
         new_ver = "1.2.1a4"
         self.skill.ask_yesno.return_value = None
-        self.skill.handle_update_neon(message)
+        self.skill.handle_update_device(message)
         self.skill.ask_yesno.assert_called_with(
             "update_core", {"new": "1 point 2 point 1 alpha 4",
                             "old": "1 point 1 point 1"})
@@ -111,7 +111,7 @@ class TestSkill(unittest.TestCase):
 
         # Alpha update approved
         self.skill.ask_yesno.return_value = "yes"
-        self.skill.handle_update_neon(message)
+        self.skill.handle_update_device(message)
         self.skill.speak_dialog.assert_called_with("starting_update", wait=True)
         start_update.assert_called_once()
         self.assertEqual(start_update.call_args[0][0].data,
@@ -152,7 +152,8 @@ class TestSkillLoading(unittest.TestCase):
 
     # Specify skill intents as sets
     adapt_intents = set()
-    padatious_intents = {"update_device.intent"}
+    padatious_intents = {"update_device.intent",
+                         "update_configuration.intent"}
 
     # regex entities, not necessarily filenames
     regex = set()
@@ -160,7 +161,8 @@ class TestSkillLoading(unittest.TestCase):
     vocab = set()
     # dialog is .dialog file basenames (case-sensitive)
     dialog = {"alpha", "check_error", "check_updates", "not_updating", "point",
-              "starting_update", "up_to_date", "update_core"}
+              "starting_update", "up_to_date", "update_core",
+              "ask_update_configuration"}
 
     @classmethod
     def setUpClass(cls) -> None:
