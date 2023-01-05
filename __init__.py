@@ -81,19 +81,21 @@ class UpdateSkill(NeonSkill):
         self._check_latest_core_release(message)
         if not all((self.current_ver, self.latest_ver)):
             self.speak_dialog("check_error")
-        elif self.current_ver != self.latest_ver:
+            return
+
+        if self.current_ver == self.latest_ver:
+            resp = self.ask_yesno("up_to_date",
+                                  {"version": self.pronounce_version(self.current_ver)})
+        else:
             resp = self.ask_yesno("update_core",
                                   {"new": self.pronounce_version(self.latest_ver),
                                    "old": self.pronounce_version(self.current_ver)})
-            if resp == "yes":
-                self.speak_dialog("starting_update", wait=True)
-                self.bus.emit(message.forward("neon.core_updater.start_update",
-                                              {"version": self.latest_ver}))
-            else:
-                self.speak_dialog("not_updating")
+        if resp == "yes":
+            self.speak_dialog("starting_update", wait=True)
+            self.bus.emit(message.forward("neon.core_updater.start_update",
+                                          {"version": self.latest_ver}))
         else:
-            self.speak_dialog("up_to_date",
-                              {"version": self.pronounce_version(self.current_ver)})
+            self.speak_dialog("not_updating")
 
     @intent_file_handler("update_configuration.intent")
     def handle_update_configuration(self, message):

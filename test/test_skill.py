@@ -74,6 +74,8 @@ class TestSkill(unittest.TestCase):
     def test_handle_update_neon(self):
         real_ask_yesno = self.skill.ask_yesno
         self.skill.ask_yesno = Mock()
+        self.skill.ask_yesno.return_value = None
+
         message = Message("recognizer_loop:utterance",
                           context={"neon_should_respond": True})
         installed_ver = None
@@ -93,15 +95,15 @@ class TestSkill(unittest.TestCase):
         self.skill.handle_update_device(message)
         self.skill.speak_dialog.assert_called_with("check_error")
 
-        # Already updated
+        # Already updated, declined
         installed_ver = new_ver = '1.1.1'
         self.skill.handle_update_device(message)
-        self.skill.speak_dialog.assert_called_with("up_to_date",
-                                                   {"version": "1 point 1 point 1"})
+        self.skill.ask_yesno.assert_called_with("up_to_date",
+                                                {"version": "1 point 1 point 1"})
+        self.skill.speak_dialog.assert_called_with("not_updating")
 
         # Alpha update avaliable, declined
         new_ver = "1.2.1a4"
-        self.skill.ask_yesno.return_value = None
         self.skill.handle_update_device(message)
         self.skill.ask_yesno.assert_called_with(
             "update_core", {"new": "1 point 2 point 1 alpha 4",
