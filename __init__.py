@@ -154,7 +154,7 @@ class UpdateSkill(NeonSkill):
         if message.data.get("success"):
             notification_data = {
                 "sender": self.skill_id,
-                "text": "OS Download Complete",
+                "text": self.translate("notify_download_complete"),
                 "action": "update.gui.continue_installation",
                 "type": "sticky",
                 "style": "info",
@@ -163,7 +163,7 @@ class UpdateSkill(NeonSkill):
         else:
             notification_data = {
                 "sender": self.skill_id,
-                "text": "OS Download Failed",
+                "text": self.translate("notify_download_failed"),
                 "type": "transient",
                 "style": "error",
                 "callback_data": message.data
@@ -181,7 +181,7 @@ class UpdateSkill(NeonSkill):
         if message.data.get("success"):
             notification_data = {
                 "sender": self.skill_id,
-                "text": "OS Installation Complete",
+                "text": self.translate("notify_installation_complete"),
                 "action": "update.gui.finish_installation",
                 "type": "transient",
                 "style": "info",
@@ -190,7 +190,7 @@ class UpdateSkill(NeonSkill):
         else:
             notification_data = {
                 "sender": self.skill_id,
-                "text": "OS Installation Failed",
+                "text": self.translate("notify_installation_failed"),
                 "action": "update.gui.finish_installation",
                 "type": "transient",
                 "style": "error",
@@ -205,6 +205,7 @@ class UpdateSkill(NeonSkill):
         After the user interacts with the completed download notification,
         prompt confirmation to clear data
         """
+        # TODO: Dismiss notification
         image_file = message.data.get("image_file")
         # TODO: Prompt user to select which device?
         confirm_number = randint(100, 999)
@@ -214,6 +215,7 @@ class UpdateSkill(NeonSkill):
                                  {'confirm': str(confirm_number)},
                                  validator)
         if resp:
+            self.speak_dialog("starting_installation")
             self.add_event("neon.install_os.complete", self.on_write_complete,
                            once=True)
             self.bus.emit(message.forward("neon.install_os",
@@ -228,6 +230,7 @@ class UpdateSkill(NeonSkill):
         an error if installation failed or else speak instructions before
         shutting down.
         """
+        # TODO: Dismiss notification
         if not message.data.get("success"):
             self.speak_dialog("error_installing_os")
         else:
