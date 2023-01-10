@@ -25,11 +25,14 @@
 # LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE,  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from random import randint
 
+from adapt.intent import IntentBuilder
+from neon_utils.validator_utils import numeric_confirmation_validator
 from ovos_utils.log import LOG
 from neon_utils.skills import NeonSkill
 from neon_utils.user_utils import get_user_prefs
-from mycroft.skills import intent_file_handler
+from mycroft.skills import intent_file_handler, intent_handler
 
 
 class UpdateSkill(NeonSkill):
@@ -42,8 +45,21 @@ class UpdateSkill(NeonSkill):
     def include_prerelease(self):
         return self.settings.get("include_prerelease", False)
 
+    @property
+    def image_url(self):
+        return self.settings.get("image_url")
+
+    @property
+    def image_drive(self):
+        return self.settings.get("image_drive") or "/dev/sdb"
+
     def initialize(self):
-        self.bus.once('mycroft.ready', self._check_latest_core_release)
+        self.add_event('mycroft.ready',
+                       self._check_latest_core_release, once=True)
+        self.add_event("update.gui.continue_installation",
+                       self.continue_os_installation)
+        self.add_event("update.gui.finish_installation",
+                       self.finish_os_installation)
 
     def _check_latest_core_release(self, message):
         """
@@ -111,6 +127,111 @@ class UpdateSkill(NeonSkill):
                                            "core_config": True}))
         else:
             self.speak_dialog("not_updating")
+
+    @intent_handler(IntentBuilder("CreateOSMediaIntent").require("create")
+                    .require("os").require("media").build())
+    def handle_create_os_media(self, message):
+        """
+        Handle a user request to create a new bootable drive.
+        """
+        resp = self.ask_yesno("ask_download_image")
+        if resp == "yes":
+            self.add_event("neon.download_os_image.complete",
+                           self.on_download_complete, once=True)
+            self.speak_dialog("downloading_image")
+            self.bus.emit(message.forward("neon.download_os_image",
+                                          {"url": self.image_url}))
+            self.speak_dialog("drive_instructions")
+        else:
+            self.speak_dialog("not_updating")
+
+    def on_download_complete(self, message):
+        """
+        After `handle_create_os_media`, this method will be called with the OS
+        image download status. Displays a notification for the user to interact
+        with to continue installation.
+        """
+        if message.data.get("success"):
+            notification_data = {
+                "sender": self.skill_id,
+                "text": "OS Download Complete",
+                "action": "update.gui.continue_installation",
+                "type": "sticky",
+                "style": "info",
+                "callback_data": message.data
+            }
+        else:
+            notification_data = {
+                "sender": self.skill_id,
+                "text": "OS Download Failed",
+                "type": "transient",
+                "style": "error",
+                "callback_data": message.data
+            }
+        LOG.info(f"Showing Download Complete Notification: {notification_data}")
+        self.bus.emit(message.forward("ovos.notification.api.set",
+                                      notification_data))
+
+    def on_write_complete(self, message):
+        """
+        After `continue_os_installation`, this method will be called with the
+        image write status. Displays a notification telling the user they may
+        restart and use the new image.
+        """
+        if message.data.get("success"):
+            notification_data = {
+                "sender": self.skill_id,
+                "text": "OS Installation Complete",
+                "action": "update.gui.finish_installation",
+                "type": "transient",
+                "style": "info",
+                "callback_data": message.data
+            }
+        else:
+            notification_data = {
+                "sender": self.skill_id,
+                "text": "OS Installation Failed",
+                "action": "update.gui.finish_installation",
+                "type": "transient",
+                "style": "error",
+                "callback_data": message.data
+            }
+        LOG.info(f"Showing Download Complete Notification: {notification_data}")
+        self.bus.emit(message.forward("ovos.notification.api.set",
+                                      notification_data))
+
+    def continue_os_installation(self, message):
+        """
+        After the user interacts with the completed download notification,
+        prompt confirmation to clear data
+        """
+        image_file = message.data.get("image_file")
+        # TODO: Prompt user to select which device?
+        confirm_number = randint(100, 999)
+        validator = numeric_confirmation_validator(str(confirm_number))
+        resp = self.get_response('ask_clear_data',
+                                 {'confirm': str(confirm_number)},
+                                 validator)
+        if resp:
+            self.add_event("neon.install_os.complete", self.on_write_complete,
+                           once=True)
+            self.bus.emit(message.forward("neon.install_os",
+                                          {"device": self.image_drive,
+                                           "image_file": image_file}))
+        else:
+            self.speak_dialog("not_updating")
+
+    def finish_os_installation(self, message):
+        """
+        After the user interacts with the installation complete message, speak
+        an error if installation failed or else speak instructions before
+        shutting down.
+        """
+        if not message.data.get("success"):
+            self.speak_dialog("error_installing_os")
+        else:
+            self.speak_dialog("installation_complete", wait=True)
+            self.bus.emit(message.forward("system.shutdown"))
 
 
 def create_skill():
