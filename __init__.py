@@ -216,9 +216,9 @@ class UpdateSkill(NeonSkill):
                                  validator)
         if resp:
             self.speak_dialog("starting_installation")
-            self.add_event("neon.install_os.complete", self.on_write_complete,
+            self.add_event("neon.install_os_image.complete", self.on_write_complete,
                            once=True)
-            self.bus.emit(message.forward("neon.install_os",
+            self.bus.emit(message.forward("neon.install_os_image",
                                           {"device": self.image_drive,
                                            "image_file": image_file}))
             # TODO: Persistent notification that write is in progress?
