@@ -181,6 +181,7 @@ class UpdateSkill(NeonSkill):
         image write status. Displays a notification telling the user they may
         restart and use the new image.
         """
+        self.bus.emit(message.forward("ovos.notification.api.remove.controlled"))
         # TODO: Use Notification API from ovos_utils
         if message.data.get("success"):
             text = self.translate("notify_installation_complete")
@@ -208,9 +209,10 @@ class UpdateSkill(NeonSkill):
 
     def _dismiss_notification(self, message):
         LOG.debug(f"Clearing notification: {message.data}")
-        self.bus.emit(message.forward("ovos.notification.api.pop.clear.delete",
-                                      {"sender": self.skill_id,
-                                       "text": message.data.get("notification")}))
+        self.bus.emit(message.forward(
+            "ovos.notification.api.storage.clear.item",
+            {"sender": self.skill_id,
+             "text": message.data.get("notification")}))
 
     def continue_os_installation(self, message):
         """
@@ -233,6 +235,10 @@ class UpdateSkill(NeonSkill):
             self.bus.emit(message.forward("neon.install_os_image",
                                           {"device": self.image_drive,
                                            "image_file": image_file}))
+            self.bus.emit(message.forward(
+                "ovos.notification.api.set.controlled",
+                {"sender": self.skill_id,
+                 "text": self.translate("notify_writing_image")}))
             # TODO: Persistent notification that write is in progress?
         else:
             self.speak_dialog("not_updating")
