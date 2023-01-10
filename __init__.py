@@ -208,8 +208,9 @@ class UpdateSkill(NeonSkill):
         image_file = message.data.get("image_file")
         # TODO: Prompt user to select which device?
         confirm_number = randint(100, 999)
+        LOG.debug(str(confirm_number))
         validator = numeric_confirmation_validator(str(confirm_number))
-        resp = self.get_response('ask_clear_data',
+        resp = self.get_response('ask_overwrite_drive',
                                  {'confirm': str(confirm_number)},
                                  validator)
         if resp:
