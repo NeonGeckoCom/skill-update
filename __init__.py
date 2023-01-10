@@ -153,21 +153,23 @@ class UpdateSkill(NeonSkill):
         """
         # TODO: Use Notification API from ovos_utils
         if message.data.get("success"):
+            text = self.translate("notify_download_complete")
             notification_data = {
                 "sender": self.skill_id,
-                "text": self.translate("notify_download_complete"),
+                "text": text,
                 "action": "update.gui.continue_installation",
                 "type": "sticky",
                 "style": "info",
-                "callback_data": message.data
+                "callback_data": {**message.data, **{"notification": text}}
             }
         else:
+            text = self.translate("notify_download_failed")
             notification_data = {
                 "sender": self.skill_id,
-                "text": self.translate("notify_download_failed"),
+                "text": text,
                 "type": "transient",
                 "style": "error",
-                "callback_data": message.data
+                "callback_data": {**message.data, **{"notification": text}}
             }
         LOG.info(f"Showing Download Complete Notification: {notification_data}")
         self.bus.emit(message.forward("ovos.notification.api.set",
@@ -181,32 +183,34 @@ class UpdateSkill(NeonSkill):
         """
         # TODO: Use Notification API from ovos_utils
         if message.data.get("success"):
+            text = self.translate("notify_installation_complete")
             notification_data = {
                 "sender": self.skill_id,
-                "text": self.translate("notify_installation_complete"),
+                "text": text,
                 "action": "update.gui.finish_installation",
                 "type": "transient",
                 "style": "info",
-                "callback_data": message.data
+                "callback_data": {**message.data, **{"notification": text}}
             }
         else:
+            text = self.translate("notify_installation_failed")
             notification_data = {
                 "sender": self.skill_id,
-                "text": self.translate("notify_installation_failed"),
+                "text": text,
                 "action": "update.gui.finish_installation",
                 "type": "transient",
                 "style": "error",
-                "callback_data": message.data
+                "callback_data": {**message.data, **{"notification": text}}
             }
         LOG.info(f"Showing Download Complete Notification: {notification_data}")
         self.bus.emit(message.forward("ovos.notification.api.set",
                                       notification_data))
 
     def _dismiss_notification(self, message):
-        LOG.info(f"Clearing notification: {message.data}")
+        LOG.debug(f"Clearing notification: {message.data}")
         self.bus.emit(message.forward("ovos.notification.api.pop.clear",
                                       {"sender": self.skill_id,
-                                       "text": message.data.get("text")}))
+                                       "text": message.data.get("notification")}))
 
     def continue_os_installation(self, message):
         """
