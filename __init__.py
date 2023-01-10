@@ -25,8 +25,8 @@
 # LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE,  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from random import randint
 
+from random import randint
 from adapt.intent import IntentBuilder
 from neon_utils.validator_utils import numeric_confirmation_validator
 from ovos_utils.log import LOG
@@ -203,6 +203,7 @@ class UpdateSkill(NeonSkill):
                                       notification_data))
 
     def _dismiss_notification(self, message):
+        LOG.info(f"Clearing notification: {message.data}")
         self.bus.emit(message.forward("ovos.notification.api.pop.clear",
                                       {"sender": self.skill_id,
                                        "text": message.data.get("text")}))
