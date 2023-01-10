@@ -153,18 +153,20 @@ class TestSkillLoading(unittest.TestCase):
     supported_languages = ["en-us"]
 
     # Specify skill intents as sets
-    adapt_intents = set()
+    adapt_intents = {"CreateOSMediaIntent"}
     padatious_intents = {"update_device.intent",
                          "update_configuration.intent"}
 
     # regex entities, not necessarily filenames
     regex = set()
     # vocab is lowercase .voc file basenames
-    vocab = set()
+    vocab = {"create", "media", "os"}
     # dialog is .dialog file basenames (case-sensitive)
     dialog = {"alpha", "check_error", "check_updates", "not_updating", "point",
               "starting_update", "up_to_date", "update_core",
-              "ask_update_configuration"}
+              "ask_update_configuration", "ask_download_image",
+              "ask_overwrite_drive", "downloading_image", "drive_instructions",
+              "error_installing_os", "installation_complete"}
 
     @classmethod
     def setUpClass(cls) -> None:

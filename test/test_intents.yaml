@@ -38,3 +38,10 @@ en-us:
     - neon update default skill settings
     - neon update my skill settings
     - neon update my default skill configuration
+  CreateOSMediaIntent:
+    - create a new boot drive
+    - make bootable media
+    - make a new operating system disk
+    - install an os disc
+    - download a new system image
+    - generate a new boot usb
