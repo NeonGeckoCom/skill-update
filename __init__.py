@@ -221,6 +221,7 @@ class UpdateSkill(NeonSkill):
             self.bus.emit(message.forward("neon.install_os",
                                           {"device": self.image_drive,
                                            "image_file": image_file}))
+            # TODO: Persistent notification that write is in progress?
         else:
             self.speak_dialog("not_updating")
 

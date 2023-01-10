@@ -30,18 +30,19 @@ en-us:
   - update my device
   - update my skills
   - update my skills software
+  - do you have any updates
   update_configuration.intent:
-    - update configuration
-    - update my default configuration
-    - update your default configuration
-    - neon update the default config
-    - neon update default skill settings
-    - neon update my skill settings
-    - neon update my default skill configuration
+  - update configuration
+  - update my default configuration
+  - update your default configuration
+  - neon update the default config
+  - neon update default skill settings
+  - neon update my skill settings
+  - neon update my default skill configuration
   CreateOSMediaIntent:
-    - create a new boot drive
-    - make bootable media
-    - make a new operating system disk
-    - install a new os to disc
-    - download a new system image
-    - generate a new boot usb
+  - create a new boot drive
+  - make bootable media
+  - make a new operating system disk
+  - install a new os to disc
+  - download a new system image
+  - generate a new boot usb
