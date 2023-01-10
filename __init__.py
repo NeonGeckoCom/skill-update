@@ -208,7 +208,7 @@ class UpdateSkill(NeonSkill):
 
     def _dismiss_notification(self, message):
         LOG.debug(f"Clearing notification: {message.data}")
-        self.bus.emit(message.forward("ovos.notification.api.pop.clear",
+        self.bus.emit(message.forward("ovos.notification.api.pop.clear.delete",
                                       {"sender": self.skill_id,
                                        "text": message.data.get("notification")}))
 
