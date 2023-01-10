@@ -158,7 +158,7 @@ class UpdateSkill(NeonSkill):
                 "sender": self.skill_id,
                 "text": text,
                 "action": "update.gui.continue_installation",
-                "type": "sticky",
+                "type": "transient",
                 "style": "info",
                 "callback_data": {**message.data, **{"notification": text}}
             }
