@@ -151,6 +151,7 @@ class UpdateSkill(NeonSkill):
         image download status. Displays a notification for the user to interact
         with to continue installation.
         """
+        # TODO: Use Notification API from ovos_utils
         if message.data.get("success"):
             notification_data = {
                 "sender": self.skill_id,
@@ -178,6 +179,7 @@ class UpdateSkill(NeonSkill):
         image write status. Displays a notification telling the user they may
         restart and use the new image.
         """
+        # TODO: Use Notification API from ovos_utils
         if message.data.get("success"):
             notification_data = {
                 "sender": self.skill_id,
@@ -200,12 +202,17 @@ class UpdateSkill(NeonSkill):
         self.bus.emit(message.forward("ovos.notification.api.set",
                                       notification_data))
 
+    def _dismiss_notification(self, message):
+        self.bus.emit(message.forward("ovos.notification.api.pop.clear",
+                                      {"sender": self.skill_id,
+                                       "text": message.data.get("text")}))
+
     def continue_os_installation(self, message):
         """
         After the user interacts with the completed download notification,
         prompt confirmation to clear data
         """
-        # TODO: Dismiss notification
+        self._dismiss_notification(message)
         image_file = message.data.get("image_file")
         # TODO: Prompt user to select which device?
         confirm_number = randint(100, 999)
@@ -231,7 +238,7 @@ class UpdateSkill(NeonSkill):
         an error if installation failed or else speak instructions before
         shutting down.
         """
-        # TODO: Dismiss notification
+        self._dismiss_notification(message)
         if not message.data.get("success"):
             self.speak_dialog("error_installing_os")
         else:
