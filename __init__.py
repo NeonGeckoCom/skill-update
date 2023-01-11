@@ -211,8 +211,8 @@ class UpdateSkill(NeonSkill):
         LOG.debug(f"Clearing notification: {message.data}")
         self.bus.emit(message.forward(
             "ovos.notification.api.storage.clear.item",
-            {"sender": self.skill_id,
-             "text": message.data.get("notification")}))
+            {"notification": {"sender": self.skill_id,
+                              "text": message.data.get("notification")}}))
 
     def continue_os_installation(self, message):
         """
@@ -239,7 +239,6 @@ class UpdateSkill(NeonSkill):
                 "ovos.notification.api.set.controlled",
                 {"sender": self.skill_id,
                  "text": self.translate("notify_writing_image")}))
-            # TODO: Persistent notification that write is in progress?
         else:
             self.speak_dialog("not_updating")
 
