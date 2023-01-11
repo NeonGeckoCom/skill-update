@@ -132,7 +132,8 @@ class UpdateSkill(NeonSkill):
                     .require("os").require("media").build())
     def handle_create_os_media(self, message):
         """
-        Handle a user request to create a new bootable drive.
+        Handle a user request to create a new bootable drive
+        :param message: message object associated with request
         """
         resp = self.ask_yesno("ask_download_image")
         if resp == "yes":
@@ -150,6 +151,7 @@ class UpdateSkill(NeonSkill):
         After `handle_create_os_media`, this method will be called with the OS
         image download status. Displays a notification for the user to interact
         with to continue installation.
+        :param message: message object associated with download completion
         """
         # TODO: Use Notification API from ovos_utils
         if message.data.get("success"):
@@ -174,6 +176,35 @@ class UpdateSkill(NeonSkill):
         LOG.info(f"Showing Download Complete Notification: {notification_data}")
         self.bus.emit(message.forward("ovos.notification.api.set",
                                       notification_data))
+
+    def continue_os_installation(self, message):
+        """
+        After the user interacts with the completed download notification,
+        prompt confirmation to clear data
+        :param message: message object associated with notification interaction
+        """
+        self._dismiss_notification(message)
+        image_file = message.data.get("image_file")
+        # TODO: Prompt user to select which device?
+        confirm_number = randint(100, 999)
+        LOG.debug(str(confirm_number))
+        validator = numeric_confirmation_validator(str(confirm_number))
+        resp = self.get_response('ask_overwrite_drive',
+                                 {'confirm': str(confirm_number)},
+                                 validator)
+        if resp:
+            self.speak_dialog("starting_installation")
+            self.add_event("neon.install_os_image.complete", self.on_write_complete,
+                           once=True)
+            self.bus.emit(message.forward("neon.install_os_image",
+                                          {"device": self.image_drive,
+                                           "image_file": image_file}))
+            self.bus.emit(message.forward(
+                "ovos.notification.api.set.controlled",
+                {"sender": self.skill_id,
+                 "text": self.translate("notify_writing_image")}))
+        else:
+            self.speak_dialog("not_updating")
 
     def on_write_complete(self, message):
         """
@@ -207,41 +238,6 @@ class UpdateSkill(NeonSkill):
         self.bus.emit(message.forward("ovos.notification.api.set",
                                       notification_data))
 
-    def _dismiss_notification(self, message):
-        LOG.debug(f"Clearing notification: {message.data}")
-        self.bus.emit(message.forward(
-            "ovos.notification.api.storage.clear.item",
-            {"notification": {"sender": self.skill_id,
-                              "text": message.data.get("notification")}}))
-
-    def continue_os_installation(self, message):
-        """
-        After the user interacts with the completed download notification,
-        prompt confirmation to clear data
-        """
-        self._dismiss_notification(message)
-        image_file = message.data.get("image_file")
-        # TODO: Prompt user to select which device?
-        confirm_number = randint(100, 999)
-        LOG.debug(str(confirm_number))
-        validator = numeric_confirmation_validator(str(confirm_number))
-        resp = self.get_response('ask_overwrite_drive',
-                                 {'confirm': str(confirm_number)},
-                                 validator)
-        if resp:
-            self.speak_dialog("starting_installation")
-            self.add_event("neon.install_os_image.complete", self.on_write_complete,
-                           once=True)
-            self.bus.emit(message.forward("neon.install_os_image",
-                                          {"device": self.image_drive,
-                                           "image_file": image_file}))
-            self.bus.emit(message.forward(
-                "ovos.notification.api.set.controlled",
-                {"sender": self.skill_id,
-                 "text": self.translate("notify_writing_image")}))
-        else:
-            self.speak_dialog("not_updating")
-
     def finish_os_installation(self, message):
         """
         After the user interacts with the installation complete message, speak
@@ -254,6 +250,16 @@ class UpdateSkill(NeonSkill):
         else:
             self.speak_dialog("installation_complete", wait=True)
             self.bus.emit(message.forward("system.shutdown"))
+
+    def _dismiss_notification(self, message):
+        """
+        Dismiss the notification the user interacted with to trigger a callback.
+        """
+        LOG.debug(f"Clearing notification: {message.data}")
+        self.bus.emit(message.forward(
+            "ovos.notification.api.storage.clear.item",
+            {"notification": {"sender": self.skill_id,
+                              "text": message.data.get("notification")}}))
 
 
 def create_skill():
