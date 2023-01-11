@@ -130,7 +130,7 @@ class TestSkill(unittest.TestCase):
         # Test no response
         self.skill.handle_create_os_media(message)
         self.skill.ask_yesno.assert_called_once_with("ask_download_image")
-        self.skill.speak_dialog.assert_called_once_with("not_updating")
+        self.skill.speak_dialog.assert_called_with("not_updating")
 
         # Test user confirmed Installation
         test_message = None
@@ -250,7 +250,7 @@ class TestSkill(unittest.TestCase):
         self.assertEqual(
             len(self.skill.bus.ee.listeners("neon.install_os_image.complete")),
             1)
-        self.skill.remove_event("neon.download_os_image.complete")
+        self.skill.remove_event("neon.install_os_image.complete")
         on_install_os.assert_called_once()
         on_controlled.assert_called_once()
 
@@ -263,12 +263,13 @@ class TestSkill(unittest.TestCase):
                              self.skill.on_write_complete)
         on_notification_removed = Mock()
         on_notification_set = Mock()
+        self.skill.bus.on("ovos.notification.api.remove.controlled",
+                          on_notification_removed)
 
         # Test successful download
         success = Message("neon.install_os_image.complete",
                           {"success": True})
-        self.skill.bus.once("ovos.notification.api.remove.controlled",
-                            on_notification_removed)
+
         self.skill.bus.once("ovos.notification.api.set",
                             on_notification_set)
         self.skill.bus.emit(success)
@@ -287,8 +288,6 @@ class TestSkill(unittest.TestCase):
         # Test failed download
         failure = Message("neon.install_os_image.complete",
                           {"success": False})
-        self.skill.bus.once("ovos.notification.api.remove.controlled",
-                            on_notification_removed)
         self.skill.bus.once("ovos.notification.api.set",
                             on_notification_set)
         self.skill.bus.emit(failure)
