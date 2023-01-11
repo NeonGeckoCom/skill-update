@@ -28,6 +28,8 @@
 
 import shutil
 import unittest
+from time import time
+
 import pytest
 import os
 import json
@@ -121,6 +123,85 @@ class TestSkill(unittest.TestCase):
 
         self.skill.ask_yesno = real_ask_yesno
 
+    def test_handle_create_os_media(self):
+        real_ask_yesno = self.skill.ask_yesno
+        self.skill.ask_yesno = Mock()
+        message = Message("test", context={"test": time()})
+        # Test no response
+        self.skill.handle_create_os_media(message)
+        self.skill.ask_yesno.assert_called_once_with("ask_download_image")
+        self.skill.speak_dialog.assert_called_once_with("not_updating")
+
+        # Test user confirmed Installation
+        test_message = None
+
+        def handle_start_download(msg):
+            nonlocal test_message
+            test_message = msg
+
+        self.skill.bus.once("neon.download_os_image", handle_start_download)
+        self.skill.ask_yesno.return_value = "yes"
+
+        self.skill.handle_create_os_media(message)
+        self.skill.ask_yesno.assert_called_with("ask_download_image")
+        self.assertIsInstance(test_message, Message)
+        self.assertEqual(test_message.context, message.context)
+        self.skill.speak_dialog.assert_any_call("downloading_image")
+        self.skill.speak_dialog.assert_called_with("drive_instructions")
+        self.assertEqual(
+            len(self.skill.bus.ee.listeners("neon.download_os_image.complete")),
+            1)
+        self.skill.remove_event("neon.download_os_image.complete")
+
+        # Test user declined installation
+        self.skill.ask_yesno.return_value = "no"
+        self.skill.handle_create_os_media(message)
+        self.skill.ask_yesno.assert_called_with("ask_download_image")
+        self.skill.speak_dialog.assert_called_with("not_updating")
+
+        self.skill.ask_yesno = real_ask_yesno
+
+    def test_on_download_complete(self):
+        # Mock event handling from intent handler
+        self.skill.add_event("neon.download_os_image.complete",
+                             self.skill.on_download_complete)
+        on_notification_set = Mock()
+
+        # Test successful download
+        success = Message("neon.download_os_image.complete",
+                          {"success": True,
+                           "image_file": "test_path"})
+        self.skill.bus.once("ovos.notification.api.set", on_notification_set)
+        self.skill.bus.emit(success)
+        on_notification_set.assert_called_once()
+        message = on_notification_set.call_args[0][0]
+        self.assertEqual(message.data['text'], 'OS Download Complete')
+        self.assertEqual(message.data['action'],
+                         'update.gui.continue_installation')
+        self.assertEqual(message.data['callback_data']['notification'],
+                         message.data['text'])
+
+        failure = Message("neon.download_os_image.complete",
+                          {"success": False,
+                           "image_file": "test_path"})
+        self.skill.bus.once("ovos.notification.api.set", on_notification_set)
+        self.skill.bus.emit(failure)
+        message = on_notification_set.call_args[0][0]
+        self.assertEqual(message.data['text'], 'OS Download Failed')
+        self.assertEqual(message.data['style'], 'error')
+
+    def test_on_write_complete(self):
+        # TODO
+        pass
+
+    def test_continue_os_installation(self):
+        # TODO
+        pass
+
+    def test_finish_os_installation(self):
+        # TODO
+        pass
+
 
 class TestSkillLoading(unittest.TestCase):
     """
@@ -169,7 +250,7 @@ class TestSkillLoading(unittest.TestCase):
               "error_installing_os", "installation_complete",
               "starting_installation", "notify_download_complete",
               "notify_download_failed", "notify_installation_complete",
-              "notify_installation_failed"}
+              "notify_installation_failed", "notify_writing_image"}
 
     @classmethod
     def setUpClass(cls) -> None:
