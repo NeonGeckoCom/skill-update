@@ -42,6 +42,10 @@ class UpdateSkill(NeonSkill):
         self.latest_ver = None
 
     @property
+    def notify_updates(self):
+        return self.settings.get("notify_updates", True)
+
+    @property
     def include_prerelease(self):
         return self.settings.get("include_prerelease", False)
 
@@ -60,6 +64,7 @@ class UpdateSkill(NeonSkill):
                        self.continue_os_installation)
         self.add_event("update.gui.finish_installation",
                        self.finish_os_installation)
+        self.add_event("update.gui.install_update", self.handle_update_device)
 
     def _check_latest_core_release(self, message):
         """
@@ -72,7 +77,25 @@ class UpdateSkill(NeonSkill):
         if response:
             LOG.debug(f"Got response: {response.data}")
             self.current_ver = response.data.get("installed_version")
-            self.latest_ver = response.data.get("latest_version") or response.data.get("new_version")
+            self.latest_ver = response.data.get("latest_version") or \
+                              response.data.get("new_version")
+            if self.latest_ver != self.current_ver and self.notify_updates and \
+                    message.msg_type == "mycroft.ready":
+                # TODO: Consider notification on scheduled checks not just ready
+                text = self.dialog_renderer.render("notify_update_available",
+                                                   {"version": self.latest_ver})
+                LOG.info("Update Available")
+                # TODO: Use Notification API from ovos_utils
+                notification_data = {
+                    "sender": self.skill_id,
+                    "text": text,
+                    "action": "update.gui.install_update",
+                    "type": "transient",
+                    "style": "info",
+                    "callback_data": {**message.data, **{"notification": text}}
+                }
+                self.bus.emit(message.forward("ovos.notification.api.set",
+                                              notification_data))
         else:
             LOG.error("No response from updater plugin")
 
@@ -100,13 +123,17 @@ class UpdateSkill(NeonSkill):
             return
 
         if self.current_ver == self.latest_ver:
-            resp = self.ask_yesno("up_to_date",
-                                  {"version": self.pronounce_version(self.current_ver)})
+            resp = self.ask_yesno(
+                "up_to_date",
+                {"version": self.pronounce_version(self.current_ver)})
         else:
-            resp = self.ask_yesno("update_core",
-                                  {"new": self.pronounce_version(self.latest_ver),
-                                   "old": self.pronounce_version(self.current_ver)})
+            resp = self.ask_yesno(
+                "update_core",
+                {"new": self.pronounce_version(self.latest_ver),
+                 "old": self.pronounce_version(self.current_ver)})
         if resp == "yes":
+            if message.data.get('notification'):
+                self._dismiss_notification(message)
             self.speak_dialog("starting_update", wait=True)
             self.bus.emit(message.forward("neon.core_updater.start_update",
                                           {"version": self.latest_ver}))
@@ -194,8 +221,8 @@ class UpdateSkill(NeonSkill):
                                  validator)
         if resp:
             self.speak_dialog("starting_installation")
-            self.add_event("neon.install_os_image.complete", self.on_write_complete,
-                           once=True)
+            self.add_event("neon.install_os_image.complete",
+                           self.on_write_complete, once=True)
             self.bus.emit(message.forward("neon.install_os_image",
                                           {"device": self.image_drive,
                                            "image_file": image_file}))
@@ -212,7 +239,8 @@ class UpdateSkill(NeonSkill):
         image write status. Displays a notification telling the user they may
         restart and use the new image.
         """
-        self.bus.emit(message.forward("ovos.notification.api.remove.controlled"))
+        self.bus.emit(message.forward(
+            "ovos.notification.api.remove.controlled"))
         # TODO: Use Notification API from ovos_utils
         if message.data.get("success"):
             text = self.translate("notify_installation_complete")

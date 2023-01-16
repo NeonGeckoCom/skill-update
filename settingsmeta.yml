@@ -1,8 +1,22 @@
 skillMetadata:
   sections:
-    - name: Core
+    - name: Updates
       fields:
-        - name: core_package
+        - name: notify_updates
+          type: checkbox
+          label: Notify when updates are available
+          value: True
+        - name: include_prerelease
+          type: checkbox
+          label: Include pre-releases in update checks
+          value: False
+    - name: Image Creation
+      fields:
+        - name: image_url
           type: text
-          label: Core Package Name
-          value: "neon-core"
+          label: URL of image to download
+          value: ""
+        - name: image_drive
+          type: text
+          label: Default drive to install images to
+          value: "/dev/sdb"
