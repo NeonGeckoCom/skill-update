@@ -42,6 +42,10 @@ class UpdateSkill(NeonSkill):
         self.latest_ver = None
 
     @property
+    def notify_updates(self):
+        return self.settings.get("notify_updates", True)
+
+    @property
     def include_prerelease(self):
         return self.settings.get("include_prerelease", False)
 
@@ -75,7 +79,7 @@ class UpdateSkill(NeonSkill):
             self.current_ver = response.data.get("installed_version")
             self.latest_ver = response.data.get("latest_version") or \
                               response.data.get("new_version")
-            if self.latest_ver != self.current_ver and \
+            if self.latest_ver != self.current_ver and self.notify_updates and \
                     message.msg_type == "mycroft.ready":
                 # TODO: Consider notification on scheduled checks not just ready
                 text = self.dialog_renderer.render("notify_update_available",
