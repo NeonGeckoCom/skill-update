@@ -369,7 +369,8 @@ class TestSkillLoading(unittest.TestCase):
               "error_installing_os", "installation_complete",
               "starting_installation", "notify_download_complete",
               "notify_download_failed", "notify_installation_complete",
-              "notify_installation_failed", "notify_writing_image"}
+              "notify_installation_failed", "notify_writing_image",
+              "notify_update_available"}
 
     @classmethod
     def setUpClass(cls) -> None:

@@ -60,6 +60,7 @@ class UpdateSkill(NeonSkill):
                        self.continue_os_installation)
         self.add_event("update.gui.finish_installation",
                        self.finish_os_installation)
+        self.add_event("update.gui.install_update", self.handle_update_device)
 
     def _check_latest_core_release(self, message):
         """
@@ -73,6 +74,21 @@ class UpdateSkill(NeonSkill):
             LOG.debug(f"Got response: {response.data}")
             self.current_ver = response.data.get("installed_version")
             self.latest_ver = response.data.get("latest_version") or response.data.get("new_version")
+            if self.latest_ver != self.current_ver:
+                LOG.info("Update Available")
+                # TODO: Use Notification API from ovos_utils
+                notification_data = {
+                    "sender": self.skill_id,
+                    "text": self.dialog_renderer.render(
+                        "notify_update_available",
+                        {"version": self.latest_ver}),
+                    "action": "update.gui.install_update",
+                    "type": "transient",
+                    "style": "info",
+                    "callback_data": message.data
+                }
+                self.bus.emit(message.forward("ovos.notification.api.set",
+                                              notification_data))
         else:
             LOG.error("No response from updater plugin")
 
