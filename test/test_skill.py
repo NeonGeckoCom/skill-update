@@ -413,7 +413,8 @@ class TestSkillLoading(unittest.TestCase):
     supported_languages = ["en-us"]
 
     # Specify skill intents as sets
-    adapt_intents = {"CreateOSMediaIntent"}
+    adapt_intents = {"CreateOSMediaIntent",
+                     "SwitchUpdateTrackIntent"}
     padatious_intents = {"update_device.intent",
                          "update_configuration.intent"}
 
