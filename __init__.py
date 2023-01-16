@@ -128,7 +128,7 @@ class UpdateSkill(NeonSkill):
                 {"new": self.pronounce_version(self.latest_ver),
                  "old": self.pronounce_version(self.current_ver)})
         if resp == "yes":
-            if message.data.get('text'):
+            if message.data.get('notification'):
                 self._dismiss_notification(message)
             self.speak_dialog("starting_update", wait=True)
             self.bus.emit(message.forward("neon.core_updater.start_update",
