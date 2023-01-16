@@ -49,3 +49,14 @@ en-us:
   - install a new os to disc
   - download a new system image
   - generate a new boot usb
+  SwitchUpdateTrackIntent:
+    - change to beta updates:
+        - beta
+    - switch to the release update track:
+        - stable
+    - enable pre-release updates:
+        - beta
+    - move to stable releases:
+        - stable
+    - update from the default track:
+        - stable

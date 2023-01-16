@@ -49,6 +49,11 @@ class UpdateSkill(NeonSkill):
     def include_prerelease(self):
         return self.settings.get("include_prerelease", False)
 
+    @include_prerelease.setter
+    def include_prerelease(self, value: bool):
+        self.settings['include_prerelease'] = value
+        self.settings.store()
+
     @property
     def image_url(self):
         return self.settings.get("image_url")
@@ -172,6 +177,38 @@ class UpdateSkill(NeonSkill):
             self.speak_dialog("drive_instructions")
         else:
             self.speak_dialog("not_updating")
+
+    @intent_handler(IntentBuilder("SwitchUpdateTrackIntent").require("change")
+                    .one_of("stable", "beta").require("updates").build())
+    def handle_switch_update_track(self, message):
+        """
+        Handle a user request to change to beta or stable release tracks
+        :param message: message object associated with request
+        """
+        include_prereleases = True if message.data.get('beta') else False
+        LOG.debug(f"Update to include_prerelease={include_prereleases}")
+        if include_prereleases:
+            update_track = self.translate("word_beta")
+        else:
+            update_track = self.translate("word_stable")
+        if include_prereleases == self.include_prerelease:  # Already Set
+            self.speak_dialog("update_track_already_set",
+                              {"track": update_track})
+            return
+        resp = self.ask_yesno("ask_change_update_track",
+                              {"track": update_track})
+
+        if resp == "yes":
+            self.include_prerelease = include_prereleases
+            self.speak_dialog("confirm_change_update_track",
+                              {"track": update_track})
+        else:
+            if self.include_prerelease:
+                update_track = self.translate("word_beta")
+            else:
+                update_track = self.translate("word_stable")
+            self.speak_dialog("confirm_no_change_update_track",
+                              {"track": update_track})
 
     def on_download_complete(self, message):
         """
