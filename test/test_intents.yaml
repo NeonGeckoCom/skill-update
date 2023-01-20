@@ -54,7 +54,7 @@ en-us:
         - beta
     - switch to the release update track:
         - stable
-    - enable pre-release updates:
+    - enable pre release updates:
         - beta
     - move to stable releases:
         - stable
