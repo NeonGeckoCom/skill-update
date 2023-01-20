@@ -1,0 +1,48 @@
+# Specify intents to test here. Valid test cases are as follows:
+
+# Basic intent match tests only:
+#lang:
+#  intent_name:
+#    - example utterance
+#    - other example utterance
+
+# Intent tests with expected vocab/entity matches:
+#lang:
+#  intent_name:
+#    - example_utterance:
+#        - expected vocab name
+#        - other expected vocab name
+
+# Intent tests with specific vocab/entity extraction tests:
+#lang:
+#  intent_name:
+#    - example_utterance:
+#        - expected_vocab_key: expected_vocab_value
+#        - expected_entity_key: expected_entity_value
+
+
+en-us:
+  update_device.intent:
+  - check for updates
+  - are there any updates available
+  - neon i want you to update
+  - update my core software
+  - update my device
+  - update my skills
+  - update my skills software
+  - do you have any updates
+  update_configuration.intent:
+  - update configuration
+  - update my default configuration
+  - update your default configuration
+  - neon update the default config
+  - neon update default skill settings
+  - neon update my skill settings
+  - neon update my default skill configuration
+  CreateOSMediaIntent:
+  - create a new boot drive
+  - make bootable media
+  - make a new operating system disk
+  - install a new os to disc
+  - download a new system image
+  - generate a new boot usb

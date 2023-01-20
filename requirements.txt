@@ -1,0 +1,2 @@
+neon-utils~=1.1
+neon-phal-plugin-core-updater~=0.0.1
