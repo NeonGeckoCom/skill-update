@@ -39,6 +39,9 @@ en-us:
   - neon update default skill settings
   - neon update my skill settings
   - neon update my default skill configuration
+  - reset skills configuration
+  - reset skill settings
+  - restore skill config
   CreateOSMediaIntent:
   - create a new boot drive
   - make bootable media

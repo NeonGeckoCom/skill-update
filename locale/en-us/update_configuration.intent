@@ -1,2 +1,2 @@
-:0 update (my |your |the |)(default |)(skill |)(config|configuration|settings)
-update (my |your |the |)(default |)(skill |)(config|configuration|settings)
+:0 (update|reset|restore) (my |your |the |)(default |)(skill |)(config|configuration|settings)
+(update|reset|restore) (my |your |the |)(default |)(skill |)(config|configuration|settings)
