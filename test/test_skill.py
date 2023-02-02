@@ -123,6 +123,66 @@ class TestSkill(unittest.TestCase):
 
         self.skill.ask_yesno = real_ask_yesno
 
+    def test_handle_switch_update_track(self):
+        real_ask_yesno = self.skill.ask_yesno
+        self.skill.ask_yesno = Mock()
+
+        # Test switch beta no change
+        self.skill.include_prerelease = True
+        test_message = Message("test", {"beta": "prerelease"})
+        self.skill.handle_switch_update_track(test_message)
+        self.skill.ask_yesno.assert_not_called()
+        self.skill.speak_dialog.assert_called_with("update_track_already_set",
+                                                   {"track": "beta"})
+
+        # Test switch stable no change
+        self.skill.include_prerelease = False
+        test_message = Message("test", {"stable": "default"})
+        self.skill.handle_switch_update_track(test_message)
+        self.skill.ask_yesno.assert_not_called()
+        self.skill.speak_dialog.assert_called_with("update_track_already_set",
+                                                   {"track": "stable"})
+
+        # Test switch beta unconfirmed
+        self.skill.ask_yesno.return_value = "no"
+        test_message = Message("test", {"beta": "prerelease"})
+        self.skill.handle_switch_update_track(test_message)
+        self.skill.ask_yesno.assert_called_with("ask_change_update_track",
+                                                {"track": "beta"})
+        self.skill.speak_dialog.assert_called_with(
+            "confirm_no_change_update_track", {"track": "stable"})
+        self.assertFalse(self.skill.include_prerelease)
+
+        # Test switch beta confirmed
+        self.skill.ask_yesno.return_value = "yes"
+        self.skill.handle_switch_update_track(test_message)
+        self.skill.ask_yesno.assert_called_with("ask_change_update_track",
+                                                {"track": "beta"})
+        self.skill.speak_dialog.assert_called_with(
+            "confirm_change_update_track", {"track": "beta"})
+        self.assertTrue(self.skill.include_prerelease)
+
+        # Test switch stable unconfirmed
+        self.skill.ask_yesno.return_value = "no"
+        test_message = Message("test", {"stable": "default"})
+        self.skill.handle_switch_update_track(test_message)
+        self.skill.ask_yesno.assert_called_with("ask_change_update_track",
+                                                {"track": "stable"})
+        self.skill.speak_dialog.assert_called_with(
+            "confirm_no_change_update_track", {"track": "beta"})
+        self.assertTrue(self.skill.include_prerelease)
+
+        # Test switch stable confirmed
+        self.skill.ask_yesno.return_value = "yes"
+        self.skill.handle_switch_update_track(test_message)
+        self.skill.ask_yesno.assert_called_with("ask_change_update_track",
+                                                {"track": "stable"})
+        self.skill.speak_dialog.assert_called_with(
+            "confirm_change_update_track", {"track": "stable"})
+        self.assertFalse(self.skill.include_prerelease)
+
+        self.skill.ask_yesno = real_ask_yesno
+
     def test_handle_create_os_media(self):
         real_ask_yesno = self.skill.ask_yesno
         self.skill.ask_yesno = Mock()
@@ -353,14 +413,15 @@ class TestSkillLoading(unittest.TestCase):
     supported_languages = ["en-us"]
 
     # Specify skill intents as sets
-    adapt_intents = {"CreateOSMediaIntent"}
+    adapt_intents = {"CreateOSMediaIntent",
+                     "SwitchUpdateTrackIntent"}
     padatious_intents = {"update_device.intent",
                          "update_configuration.intent"}
 
     # regex entities, not necessarily filenames
     regex = set()
     # vocab is lowercase .voc file basenames
-    vocab = {"create", "media", "os"}
+    vocab = {"create", "media", "os", "beta", "change", "stable", "updates"}
     # dialog is .dialog file basenames (case-sensitive)
     dialog = {"alpha", "check_error", "check_updates", "not_updating", "point",
               "starting_update", "up_to_date", "update_core",
@@ -370,7 +431,9 @@ class TestSkillLoading(unittest.TestCase):
               "starting_installation", "notify_download_complete",
               "notify_download_failed", "notify_installation_complete",
               "notify_installation_failed", "notify_writing_image",
-              "notify_update_available"}
+              "notify_update_available", "ask_change_update_track",
+              "update_track_already_set", "word_beta", "word_stable",
+              "confirm_change_update_track", "confirm_no_change_update_track"}
 
     @classmethod
     def setUpClass(cls) -> None:

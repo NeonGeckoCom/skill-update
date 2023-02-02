@@ -38,6 +38,8 @@ is a multi-step process.
 - Do you have any updates?
 - Update my default configuration.
 - Create a new boot drive.
+- Switch to beta releases.
+- Change to stable updates.
 
 ## Contact Support
 
