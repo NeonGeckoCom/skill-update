@@ -73,6 +73,25 @@ class TestSkill(unittest.TestCase):
 
         self.assertIsInstance(self.skill, NeonSkill)
 
+    def test_handle_core_version(self):
+        real_check_release = self.skill._check_latest_core_release
+        self.skill._check_latest_core_release = Mock()
+        test_message = Message("")
+
+        # No alpha version
+        self.skill.current_ver = "22.10.0"
+        self.skill.handle_core_version(test_message)
+        self.skill._check_latest_core_release.assert_called_once_with(test_message)
+        self.skill.speak_dialog.assert_called_once_with("core_version", {"version": "22 point 10 point 0"})
+
+        # Alpha version
+        self.skill.current_ver = "22.10.1a10"
+        self.skill.handle_core_version(test_message)
+        self.skill._check_latest_core_release.assert_called_once_with(test_message)
+        self.skill.speak_dialog.assert_called_once_with("core_version", {"version": "22 point 10 point 1 alpha 10"})
+
+        self.skill._check_latest_core_release = real_check_release
+
     def test_handle_update_neon(self):
         real_ask_yesno = self.skill.ask_yesno
         self.skill.ask_yesno = Mock()
@@ -416,7 +435,8 @@ class TestSkillLoading(unittest.TestCase):
     adapt_intents = {"CreateOSMediaIntent",
                      "SwitchUpdateTrackIntent"}
     padatious_intents = {"update_device.intent",
-                         "update_configuration.intent"}
+                         "update_configuration.intent",
+                         "core_version.intent"}
 
     # regex entities, not necessarily filenames
     regex = set()
@@ -433,7 +453,8 @@ class TestSkillLoading(unittest.TestCase):
               "notify_installation_failed", "notify_writing_image",
               "notify_update_available", "ask_change_update_track",
               "update_track_already_set", "word_beta", "word_stable",
-              "confirm_change_update_track", "confirm_no_change_update_track"}
+              "confirm_change_update_track", "confirm_no_change_update_track",
+              "core_version"}
 
     @classmethod
     def setUpClass(cls) -> None:
