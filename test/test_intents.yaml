@@ -22,6 +22,13 @@
 
 
 en-us:
+  core_version.intent:
+    - what version am I on
+    - what version are you on
+    - Neon what version is installed
+    - Mycroft what version is installed
+    - what is your core version
+    - Neon what is my core version
   update_device.intent:
   - check for updates
   - are there any updates available
