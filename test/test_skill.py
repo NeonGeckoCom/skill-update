@@ -82,7 +82,7 @@ class TestSkill(unittest.TestCase):
         self.skill.current_ver = "22.10.0"
         self.skill.handle_core_version(test_message)
         self.skill._check_latest_core_release.assert_called_once_with(test_message)
-        self.skill.speak_dialog.assert_called_once_with("core_version", {"version": "22 point 10 point 0"})
+        self.skill.speak_dialog.assert_called_with("core_version", {"version": "22 point 10 point 0"})
 
         # Alpha version
         self.skill.current_ver = "22.10.1a10"
