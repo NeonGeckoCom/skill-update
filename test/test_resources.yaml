@@ -1,0 +1,60 @@
+# Specify resources to test here.
+
+# Specify languages to be tested
+languages:
+  - "en-us"
+
+# vocab is lowercase .voc file basenames
+vocab:
+  - create
+  - media
+  - os
+  - beta
+  - change
+  - stable
+  - updates
+
+# dialog is .dialog file basenames (case-sensitive)
+dialog:
+  - "alpha"
+  - "check_error"
+  - "check_updates"
+  - "not_updating"
+  - "point"
+  - "starting_update"
+  - "up_to_date"
+  - "update_core"
+  - "ask_update_configuration"
+  - "ask_download_image"
+  - "ask_overwrite_drive"
+  - "downloading_image"
+  - "drive_instructions"
+  - "error_installing_os"
+  - "installation_complete"
+  - "starting_installation"
+  - "notify_download_complete"
+  - "notify_download_failed"
+  - "notify_installation_complete"
+  - "notify_installation_failed"
+  - "notify_writing_image"
+  - "notify_update_available"
+  - "ask_change_update_track"
+  - "update_track_already_set"
+  - "word_beta"
+  - "word_stable"
+  - "confirm_change_update_track"
+  - "confirm_no_change_update_track"
+  - "core_version"
+# regex entities, not necessarily filenames
+regex:
+  - drink
+intents:
+  # Padatious intents are the `.intent` file names
+  padatious:
+    - update_device.intent
+    - update_configuration.intent
+    - core_version.intent
+  # Adapt intents are the name passed to the constructor
+  adapt:
+    - CreateOSMediaIntent
+    - SwitchUpdateTrackIntent
