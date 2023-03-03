@@ -29,7 +29,9 @@
 from random import randint
 from adapt.intent import IntentBuilder
 from neon_utils.validator_utils import numeric_confirmation_validator
+from ovos_utils import classproperty
 from ovos_utils.log import LOG
+from ovos_utils.process_utils import RuntimeRequirements
 from neon_utils.skills import NeonSkill
 from neon_utils.user_utils import get_user_prefs
 from mycroft.skills import intent_file_handler, intent_handler
@@ -40,6 +42,18 @@ class UpdateSkill(NeonSkill):
         super(UpdateSkill, self).__init__(name="NeonUpdates")
         self.current_ver = None
         self.latest_ver = None
+
+    @classproperty
+    def runtime_requirements(self):
+        return RuntimeRequirements(network_before_load=False,
+                                   internet_before_load=False,
+                                   gui_before_load=False,
+                                   requires_internet=True,
+                                   requires_network=True,
+                                   requires_gui=False,
+                                   no_internet_fallback=False,
+                                   no_network_fallback=False,
+                                   no_gui_fallback=True)
 
     @property
     def notify_updates(self):
@@ -144,6 +158,17 @@ class UpdateSkill(NeonSkill):
                                           {"version": self.latest_ver}))
         else:
             self.speak_dialog("not_updating")
+
+    @intent_file_handler("core_version.intent")
+    def handle_core_version(self, message):
+        """
+        Handle a user request for the current installed version.
+        :param message: message object associated with request
+        """
+        self._check_latest_core_release(message)
+        version = self.pronounce_version(self.current_ver)
+        LOG.debug(version)
+        self.speak_dialog("core_version", {"version": version})
 
     @intent_file_handler("update_configuration.intent")
     def handle_update_configuration(self, message):
