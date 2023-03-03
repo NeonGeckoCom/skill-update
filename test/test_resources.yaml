@@ -46,8 +46,7 @@ dialog:
   - "confirm_no_change_update_track"
   - "core_version"
 # regex entities, not necessarily filenames
-regex:
-  - drink
+regex: []
 intents:
   # Padatious intents are the `.intent` file names
   padatious:
