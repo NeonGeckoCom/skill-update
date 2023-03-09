@@ -67,3 +67,5 @@ en-us:
         - stable
     - update from the default track:
         - stable
+    - switch to preview updates:
+        - beta
