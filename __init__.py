@@ -227,6 +227,7 @@ class UpdateSkill(NeonSkill):
             self.include_prerelease = include_prereleases
             self.speak_dialog("confirm_change_update_track",
                               {"track": update_track})
+            self._check_latest_core_release(message)
         else:
             if self.include_prerelease:
                 update_track = self.translate("word_beta")
