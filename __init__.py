@@ -99,8 +99,7 @@ class UpdateSkill(NeonSkill):
             self.latest_ver = response.data.get("latest_version") or \
                               response.data.get("new_version")
             if self.latest_ver != self.current_ver and self.notify_updates and \
-                    message.msg_type == "mycroft.ready":
-                # TODO: Consider notification on scheduled checks not just ready
+                    message.msg_type in ("mycroft.ready", "neon.update.check"):
                 text = self.dialog_renderer.render("notify_update_available",
                                                    {"version": self.latest_ver})
                 LOG.info("Update Available")
@@ -227,7 +226,8 @@ class UpdateSkill(NeonSkill):
             self.include_prerelease = include_prereleases
             self.speak_dialog("confirm_change_update_track",
                               {"track": update_track})
-            self._check_latest_core_release(message)
+            self._check_latest_core_release(
+                message.forward("neon.update.check"))
         else:
             if self.include_prerelease:
                 update_track = self.translate("word_beta")
