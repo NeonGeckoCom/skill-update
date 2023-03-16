@@ -29,6 +29,7 @@ en-us:
     - Mycroft what version is installed
     - what is your core version
     - Neon what is my core version
+    - what is my version number
   update_device.intent:
   - check for updates
   - are there any updates available
@@ -38,6 +39,7 @@ en-us:
   - update my skills
   - update my skills software
   - do you have any updates
+  - run updates
   update_configuration.intent:
   - update configuration
   - update my default configuration
