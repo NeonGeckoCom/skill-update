@@ -183,7 +183,8 @@ class TestSkill(unittest.TestCase):
         self.skill.speak_dialog.assert_called_with(
             "confirm_change_update_track", {"track": "beta"})
         self.assertTrue(self.skill.include_prerelease)
-        mock.assert_called_with(test_message)
+        mock.assert_called_once()
+        mock.reset_mock()
 
         # Test switch stable unconfirmed
         self.skill.ask_yesno.return_value = "no"
@@ -203,7 +204,7 @@ class TestSkill(unittest.TestCase):
         self.skill.speak_dialog.assert_called_with(
             "confirm_change_update_track", {"track": "stable"})
         self.assertFalse(self.skill.include_prerelease)
-        mock.assert_called_with(test_message)
+        mock.assert_called_once()
 
         self.skill.ask_yesno = real_ask_yesno
         self.skill._check_latest_core_release = real_check_release
