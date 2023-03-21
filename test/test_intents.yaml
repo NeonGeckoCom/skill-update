@@ -71,3 +71,5 @@ en-us:
         - stable
     - switch to preview updates:
         - beta
+    - enable stable updates:
+        - stable
