@@ -145,6 +145,9 @@ class TestSkill(unittest.TestCase):
     def test_handle_switch_update_track(self):
         real_ask_yesno = self.skill.ask_yesno
         self.skill.ask_yesno = Mock()
+        real_check_release = self.skill._check_latest_core_release
+        mock = Mock()
+        self.skill._check_latest_core_release = mock
 
         # Test switch beta no change
         self.skill.include_prerelease = True
@@ -180,6 +183,8 @@ class TestSkill(unittest.TestCase):
         self.skill.speak_dialog.assert_called_with(
             "confirm_change_update_track", {"track": "beta"})
         self.assertTrue(self.skill.include_prerelease)
+        mock.assert_called_once()
+        mock.reset_mock()
 
         # Test switch stable unconfirmed
         self.skill.ask_yesno.return_value = "no"
@@ -199,8 +204,10 @@ class TestSkill(unittest.TestCase):
         self.skill.speak_dialog.assert_called_with(
             "confirm_change_update_track", {"track": "stable"})
         self.assertFalse(self.skill.include_prerelease)
+        mock.assert_called_once()
 
         self.skill.ask_yesno = real_ask_yesno
+        self.skill._check_latest_core_release = real_check_release
 
     def test_handle_create_os_media(self):
         real_ask_yesno = self.skill.ask_yesno
