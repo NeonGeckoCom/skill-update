@@ -198,6 +198,7 @@ class UpdateSkill(NeonSkill):
             self.speak_dialog("downloading_image")
             self.bus.emit(message.forward("neon.download_os_image",
                                           {"url": self.image_url}))
+            # TODO: Generate 'downloading' notification
             self.speak_dialog("drive_instructions")
         else:
             self.speak_dialog("not_updating")
