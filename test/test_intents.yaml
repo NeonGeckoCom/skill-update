@@ -30,6 +30,7 @@ en-us:
     - what is your core version
     - Neon what is my core version
     - what is my version number
+    - what is my version
   update_device.intent:
   - check for updates
   - are there any updates available
@@ -73,3 +74,5 @@ en-us:
         - beta
     - enable stable updates:
         - stable
+    - enable advance updates:
+        - beta
