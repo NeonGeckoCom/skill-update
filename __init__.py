@@ -32,6 +32,7 @@ from neon_utils.validator_utils import numeric_confirmation_validator
 from ovos_utils import classproperty
 from ovos_utils.log import LOG
 from ovos_utils.process_utils import RuntimeRequirements
+from ovos_utils.network_utils import is_connected_http
 from neon_utils.skills import NeonSkill
 from neon_utils.user_utils import get_user_prefs
 from mycroft.skills import intent_file_handler, intent_handler
@@ -138,6 +139,12 @@ class UpdateSkill(NeonSkill):
         self._check_latest_core_release(message)
         if not all((self.current_ver, self.latest_ver)):
             self.speak_dialog("check_error")
+            return
+
+        # TODO: Support alternate update sources?
+        if not is_connected_http("https://github.com"):
+            LOG.warning(f"GitHub not available. Skipping update")
+            self.speak_dialog("error_offline")
             return
 
         if self.current_ver == self.latest_ver:
