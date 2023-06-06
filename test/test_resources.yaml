@@ -45,6 +45,7 @@ dialog:
   - "confirm_change_update_track"
   - "confirm_no_change_update_track"
   - "core_version"
+  - "error_offline"
 # regex entities, not necessarily filenames
 regex: []
 intents:

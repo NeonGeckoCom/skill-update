@@ -140,6 +140,8 @@ class TestSkill(unittest.TestCase):
         self.assertEqual(start_update.call_args[0][0].data,
                          {"version": new_ver})
 
+        # TODO: Test offline
+
         self.skill.ask_yesno = real_ask_yesno
 
     def test_handle_switch_update_track(self):
