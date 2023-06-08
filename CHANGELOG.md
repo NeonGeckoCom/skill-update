@@ -1,29 +1,12 @@
 # Changelog
 
-## [0.3.1a4](https://github.com/NeonGeckoCom/skill-update/tree/0.3.1a4) (2023-06-06)
+## [0.3.2a1](https://github.com/NeonGeckoCom/skill-update/tree/0.3.2a1) (2023-06-08)
 
-[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/0.3.1a3...0.3.1a4)
+[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/0.3.1...0.3.2a1)
 
-**Merged pull requests:**
+**Fixed bugs:**
 
-- Add check and spoken error if requested update while offline [\#48](https://github.com/NeonGeckoCom/skill-update/pull/48) ([NeonDaniel](https://github.com/NeonDaniel))
-
-## [0.3.1a3](https://github.com/NeonGeckoCom/skill-update/tree/0.3.1a3) (2023-05-31)
-
-[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/0.3.1a2...0.3.1a3)
-
-**Merged pull requests:**
-
-- Update vocab and intent tests [\#47](https://github.com/NeonGeckoCom/skill-update/pull/47) ([NeonDaniel](https://github.com/NeonDaniel))
-
-## [0.3.1a2](https://github.com/NeonGeckoCom/skill-update/tree/0.3.1a2) (2023-05-31)
-
-[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/0.3.0...0.3.1a2)
-
-**Merged pull requests:**
-
-- Update GitHub automations [\#46](https://github.com/NeonGeckoCom/skill-update/pull/46) ([NeonDaniel](https://github.com/NeonDaniel))
-- Update various dialogue & vocab files [\#41](https://github.com/NeonGeckoCom/skill-update/pull/41) ([NeonClary](https://github.com/NeonClary))
+- Prevent invalid update notifications [\#50](https://github.com/NeonGeckoCom/skill-update/pull/50) ([NeonDaniel](https://github.com/NeonDaniel))
 
 
 
