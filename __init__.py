@@ -98,23 +98,21 @@ class UpdateSkill(NeonSkill):
             LOG.debug(f"Got response: {response.data}")
             self.current_ver = response.data.get("installed_version")
             self.latest_ver = response.data.get("latest_version") or \
-                              response.data.get("new_version")
-            if self.latest_ver != self.current_ver and self.notify_updates and \
+                response.data.get("new_version")
+            if not self.latest_ver:
+                LOG.error(f"Expected string version and got none in response: "
+                          f"{response.data}")
+            elif self.latest_ver != self.current_ver and \
+                    self.notify_updates and \
                     message.msg_type in ("mycroft.ready", "neon.update.check"):
                 text = self.dialog_renderer.render("notify_update_available",
                                                    {"version": self.latest_ver})
                 LOG.info("Update Available")
-                # TODO: Use Notification API from ovos_utils
-                notification_data = {
-                    "sender": self.skill_id,
-                    "text": text,
-                    "action": "update.gui.install_update",
-                    "type": "transient",
-                    "style": "info",
-                    "callback_data": {**message.data, **{"notification": text}}
-                }
-                self.bus.emit(message.forward("ovos.notification.api.set",
-                                              notification_data))
+                callback_data = {**message.data, **{"notification": text}}
+                self.gui.show_notification(text,
+                                           action="update.gui.install_update",
+                                           callback_data=callback_data)
+
         else:
             LOG.error("No response from updater plugin")
 
@@ -206,6 +204,7 @@ class UpdateSkill(NeonSkill):
             self.bus.emit(message.forward("neon.download_os_image",
                                           {"url": self.image_url}))
             self.speak_dialog("drive_instructions")
+            # TODO: Sticky notification during download
         else:
             self.speak_dialog("not_updating")
 
