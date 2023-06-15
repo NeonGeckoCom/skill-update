@@ -39,8 +39,8 @@ from mycroft.skills import intent_file_handler, intent_handler
 
 
 class UpdateSkill(NeonSkill):
-    def __init__(self):
-        super(UpdateSkill, self).__init__(name="NeonUpdates")
+    def __init__(self, **kwargs):
+        NeonSkill.__init__(self, **kwargs)
         self.current_ver = None
         self.latest_ver = None
 
@@ -77,6 +77,7 @@ class UpdateSkill(NeonSkill):
     def image_drive(self):
         return self.settings.get("image_drive") or "/dev/sdb"
 
+    # TODO: Move to __init__ after stable ovos-workshop
     def initialize(self):
         self.add_event('mycroft.ready',
                        self._check_latest_core_release, once=True)
@@ -357,7 +358,3 @@ class UpdateSkill(NeonSkill):
             "ovos.notification.api.storage.clear.item",
             {"notification": {"sender": self.skill_id,
                               "text": message.data.get("notification")}}))
-
-
-def create_skill():
-    return UpdateSkill()
