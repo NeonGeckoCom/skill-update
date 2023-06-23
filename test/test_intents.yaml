@@ -41,6 +41,7 @@ en-us:
   - update my skills software
   - do you have any updates
   - run updates
+  - what are my update options
   update_configuration.intent:
   - update configuration
   - update my default configuration

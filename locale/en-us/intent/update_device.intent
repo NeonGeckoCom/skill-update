@@ -1,14 +1,7 @@
-:0 update my device
-:0 check for updates
-:0 are there any updates
+:0 (check for|are there|do you have|run)( any|) updates
+:0 update my( core| skills| device)( software|)
 :0 i want you to update
-:0 update my( core| skills|)( software|)
-:0 do you have any updates
-:0 run updates
-update my device
-check for updates
-are there any updates
+(check for|are there|do you have|run)( any|) updates
+update my( core| skills| device)( software|)
 i want you to update
-update my( core| skills|)( software|)
-do you have any updates
-run updates
+what are my update options
