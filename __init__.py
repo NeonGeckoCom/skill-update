@@ -91,6 +91,7 @@ class UpdateSkill(NeonSkill):
         self.add_event("update.gui.install_update", self.handle_update_device)
 
     def _on_ready(self, message):
+        LOG.debug("Checking latest core version")
         self._check_latest_core_release(message)
 
         update_stat = self._check_update_status()
