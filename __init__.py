@@ -94,6 +94,7 @@ class UpdateSkill(NeonSkill):
         self._check_latest_core_release(message)
 
         update_stat = self._check_update_status()
+        LOG.debug(f"Update status is {update_stat}")
         speak_version = self.pronounce_version(self.current_ver)
         if update_stat is True:
             LOG.debug("Update success")
@@ -199,11 +200,14 @@ class UpdateSkill(NeonSkill):
             True if an update was successful
             False if an update failed
         """
-        if not self.file_system.exists(self._update_filename):
+        update_filepath = os.path.join(self.file_system.path,
+                                       self._update_filename)
+        if not os.path.exists(update_filepath):
             return None
-        with self.file_system.open(self._update_filename, 'r') as f:
+        with open(update_filepath, 'r') as f:
             expected_ver = f.read()
-        os.remove(os.path.join(self.file_system.path, self._update_filename))
+        os.remove(update_filepath)
+        LOG.info(f"Removed update signal at {update_filepath}")
         if self.current_ver != expected_ver:
             LOG.error(f"Update expected {expected_ver} but "
                       f"{self.current_ver} is installed")
