@@ -94,14 +94,15 @@ class UpdateSkill(NeonSkill):
         self._check_latest_core_release(message)
 
         update_stat = self._check_update_status()
+        speak_version = self.pronounce_version(self.current_ver)
         if update_stat is True:
             LOG.debug("Update success")
             self.speak_dialog("notify_update_success",
-                              {"version": self.current_ver})
+                              {"version": speak_version})
         elif update_stat is False:
             LOG.warning("Update failed")
             self.speak_dialog("notify_update_failure",
-                              {"version": self.current_ver})
+                              {"version": speak_version})
 
     def _check_latest_core_release(self, message):
         """
