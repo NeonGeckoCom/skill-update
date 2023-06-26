@@ -26,7 +26,10 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE,  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import os
+
 from random import randint
+from typing import Optional
 from adapt.intent import IntentBuilder
 from neon_utils.validator_utils import numeric_confirmation_validator
 from ovos_utils import classproperty
@@ -43,6 +46,7 @@ class UpdateSkill(NeonSkill):
         NeonSkill.__init__(self, **kwargs)
         self.current_ver = None
         self.latest_ver = None
+        self._update_filename = "update_signal"
 
     @classproperty
     def runtime_requirements(self):
@@ -79,13 +83,31 @@ class UpdateSkill(NeonSkill):
 
     # TODO: Move to __init__ after stable ovos-workshop
     def initialize(self):
-        self.add_event('mycroft.ready',
-                       self._check_latest_core_release, once=True)
+        self.add_event('mycroft.ready', self._on_ready)
         self.add_event("update.gui.continue_installation",
                        self.continue_os_installation)
         self.add_event("update.gui.finish_installation",
                        self.finish_os_installation)
         self.add_event("update.gui.install_update", self.handle_update_device)
+
+    def _on_ready(self, message):
+        LOG.debug("Checking latest core version")
+        self._check_latest_core_release(message)
+
+        update_stat = self._check_update_status()
+        LOG.debug(f"Update status is {update_stat}")
+        if not update_stat:
+            # No update was attempted
+            return
+        speak_version = self.pronounce_version(self.current_ver)
+        if update_stat is True:
+            LOG.debug("Update success")
+            self.speak_dialog("notify_update_success",
+                              {"version": speak_version})
+        elif update_stat is False:
+            LOG.warning("Update failed")
+            self.speak_dialog("notify_update_failure",
+                              {"version": speak_version})
 
     def _check_latest_core_release(self, message):
         """
@@ -94,7 +116,8 @@ class UpdateSkill(NeonSkill):
         """
         response = self.bus.wait_for_response(
             message.forward("neon.core_updater.check_update",
-                            {'include_prerelease': self.include_prerelease}))
+                            {'include_prerelease': self.include_prerelease}),
+            timeout=15)
         if response:
             LOG.debug(f"Got response: {response.data}")
             self.current_ver = response.data.get("installed_version")
@@ -158,11 +181,43 @@ class UpdateSkill(NeonSkill):
         if resp == "yes":
             if message.data.get('notification'):
                 self._dismiss_notification(message)
+            self._write_update_signal(self.latest_ver)
             self.speak_dialog("starting_update", wait=True)
             self.bus.emit(message.forward("neon.core_updater.start_update",
                                           {"version": self.latest_ver}))
         else:
             self.speak_dialog("not_updating")
+
+    def _write_update_signal(self, new_ver: str):
+        """
+        Write a file with the version being updated to that can be checked upon
+        next boot
+        :param new_ver: New core version being updated to
+        """
+        with self.file_system.open(self._update_filename, 'w+') as f:
+            f.write(new_ver)
+
+    def _check_update_status(self) -> Optional[bool]:
+        """
+        Check if an update was completed on startup.
+        Returns:
+            None if no update was attempted
+            True if an update was successful
+            False if an update failed
+        """
+        update_filepath = os.path.join(self.file_system.path,
+                                       self._update_filename)
+        if not os.path.exists(update_filepath):
+            return None
+        with open(update_filepath, 'r') as f:
+            expected_ver = f.read()
+        os.remove(update_filepath)
+        LOG.info(f"Removed update signal at {update_filepath}")
+        if self.current_ver != expected_ver:
+            LOG.error(f"Update expected {expected_ver} but "
+                      f"{self.current_ver} is installed")
+            return False
+        return True
 
     @intent_file_handler("core_version.intent")
     def handle_core_version(self, message):
