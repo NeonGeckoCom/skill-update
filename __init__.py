@@ -83,7 +83,7 @@ class UpdateSkill(NeonSkill):
 
     # TODO: Move to __init__ after stable ovos-workshop
     def initialize(self):
-        self.add_event('mycroft.ready', self._on_ready, once=True)
+        self.add_event('mycroft.ready', self._on_ready)
         self.add_event("update.gui.continue_installation",
                        self.continue_os_installation)
         self.add_event("update.gui.finish_installation",
@@ -96,6 +96,9 @@ class UpdateSkill(NeonSkill):
 
         update_stat = self._check_update_status()
         LOG.debug(f"Update status is {update_stat}")
+        if not update_stat:
+            # No update was attempted
+            return
         speak_version = self.pronounce_version(self.current_ver)
         if update_stat is True:
             LOG.debug("Update success")
@@ -113,7 +116,8 @@ class UpdateSkill(NeonSkill):
         """
         response = self.bus.wait_for_response(
             message.forward("neon.core_updater.check_update",
-                            {'include_prerelease': self.include_prerelease}))
+                            {'include_prerelease': self.include_prerelease}),
+            timeout=15)
         if response:
             LOG.debug(f"Got response: {response.data}")
             self.current_ver = response.data.get("installed_version")
