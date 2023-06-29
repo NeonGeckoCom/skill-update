@@ -1,12 +1,44 @@
 # Changelog
 
-## [0.3.2a1](https://github.com/NeonGeckoCom/skill-update/tree/0.3.2a1) (2023-06-08)
+## [0.3.3a4](https://github.com/NeonGeckoCom/skill-update/tree/0.3.3a4) (2023-06-26)
 
-[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/0.3.1...0.3.2a1)
+[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/0.3.3a3...0.3.3a4)
+
+**Implemented enhancements:**
+
+- \[FEAT\] Notify on update completed [\#55](https://github.com/NeonGeckoCom/skill-update/issues/55)
+
+**Merged pull requests:**
+
+- Speak update status following an update [\#56](https://github.com/NeonGeckoCom/skill-update/pull/56) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [0.3.3a3](https://github.com/NeonGeckoCom/skill-update/tree/0.3.3a3) (2023-06-23)
+
+[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/0.3.3a2...0.3.3a3)
 
 **Fixed bugs:**
 
-- Prevent invalid update notifications [\#50](https://github.com/NeonGeckoCom/skill-update/pull/50) ([NeonDaniel](https://github.com/NeonDaniel))
+- \[BUG\] "what are my update options" intent [\#44](https://github.com/NeonGeckoCom/skill-update/issues/44)
+
+**Merged pull requests:**
+
+- Update update intent [\#54](https://github.com/NeonGeckoCom/skill-update/pull/54) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [0.3.3a2](https://github.com/NeonGeckoCom/skill-update/tree/0.3.3a2) (2023-06-15)
+
+[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/0.3.3a1...0.3.3a2)
+
+**Merged pull requests:**
+
+- Deprecate `create_skill` method and update `__init__` for best practices [\#53](https://github.com/NeonGeckoCom/skill-update/pull/53) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [0.3.3a1](https://github.com/NeonGeckoCom/skill-update/tree/0.3.3a1) (2023-06-12)
+
+[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/0.3.2...0.3.3a1)
+
+**Merged pull requests:**
+
+- Update version intent and messagebus client dependency [\#52](https://github.com/NeonGeckoCom/skill-update/pull/52) ([NeonDaniel](https://github.com/NeonDaniel))
 
 
 
