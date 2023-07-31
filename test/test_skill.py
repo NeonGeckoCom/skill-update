@@ -79,13 +79,13 @@ class TestSkill(unittest.TestCase):
         test_message = Message("")
 
         # No alpha version
-        self.skill.current_ver = "22.10.0"
+        self.skill.current_core_ver = "22.10.0"
         self.skill.handle_core_version(test_message)
         self.skill._check_latest_core_release.assert_called_once_with(test_message)
         self.skill.speak_dialog.assert_called_with("core_version", {"version": "22 point 10 point 0"})
 
         # Alpha version
-        self.skill.current_ver = "22.10.1a10"
+        self.skill.current_core_ver = "22.10.1a10"
         self.skill.handle_core_version(test_message)
         self.skill._check_latest_core_release.assert_called_with(test_message)
         self.skill.speak_dialog.assert_called_with("core_version", {"version": "22 point 10 point 1 alpha 10"})
