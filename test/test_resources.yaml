@@ -48,6 +48,10 @@ dialog:
   - "error_offline"
   - "notify_update_success"
   - "notify_update_failure"
+  - "error_updating_os"
+  - "update_system"
+  - "notify_downloading_update"
+  - "update_restarting"
 # regex entities, not necessarily filenames
 regex: []
 intents:
