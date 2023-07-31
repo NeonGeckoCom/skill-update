@@ -29,16 +29,18 @@
 import os
 
 from random import randint
+from threading import Event
 from typing import Optional
 from adapt.intent import IntentBuilder
 from neon_utils.validator_utils import numeric_confirmation_validator
+from ovos_bus_client import Message
 from ovos_utils import classproperty
 from ovos_utils.log import LOG
 from ovos_utils.process_utils import RuntimeRequirements
 from ovos_utils.network_utils import is_connected_http
 from neon_utils.skills import NeonSkill
 from neon_utils.user_utils import get_user_prefs
-from mycroft.skills import intent_file_handler, intent_handler
+from ovos_workshop.decorators import intent_file_handler, intent_handler
 
 
 class UpdateSkill(NeonSkill):
@@ -176,7 +178,9 @@ class UpdateSkill(NeonSkill):
         Handle a user request to check for updates.
         :param message: message object associated with request
         """
-        if get_user_prefs(message)['response_mode'].get('hesitation'):
+        # Explicitly enabled for initramfs checks that involve file downloads
+        if get_user_prefs(message)['response_mode'].get('hesitation') or \
+                self.check_initramfs:
             self.speak_dialog("check_updates")
         initramfs_available = False
         squashfs_available = False
@@ -192,6 +196,7 @@ class UpdateSkill(NeonSkill):
                 self.speak_dialog("starting_update", wait=True)
 
                 if initramfs_available:
+                    LOG.info("Updating initramfs")
                     resp = self.bus.wait_for_response(
                         message.forward("neon.update_initramfs"), timeout=30)
                     if resp and resp.data.get("updated"):
@@ -204,15 +209,27 @@ class UpdateSkill(NeonSkill):
                         return
                 if squashfs_available:
                     self._write_update_signal("squashfs")
-                    # TODO: Persistent notification since this might take awhile
+
+                    self.gui.show_controlled_notification(
+                        self.translate("notify_downloading_update"))
+
+                    LOG.info("Updating squashfs")
                     resp = self.bus.wait_for_response(
-                        message.forward("neon.update_squashfs"), timeout=600)
-                    if resp and resp.data.get("new_version"):
+                        message.forward("neon.update_squashfs"), timeout=1800)
+                    if not resp:
+                        LOG.warning(f"Timed out waiting for download")
+                        self.gui.remove_controlled_notification()
+                        self.speak_dialog("error_updating_os")
+                        return
+                    self.gui.remove_controlled_notification()
+                    if resp.data.get("new_version"):
                         LOG.info("squashfs updated")
-                        # TODO: Speak?
+                        self.speak_dialog("update_restarting", wait=True)
                         self.bus.emit(message.forward("system.reboot"))
                     else:
-                        error = resp.data.get("error")
+                        error = "no response"
+                        if resp:
+                            error = resp.data.get("error")
                         LOG.error(f"squashfs update failed: {error}")
                         self.speak_dialog("error_updating_os")
                         return
@@ -396,29 +413,21 @@ class UpdateSkill(NeonSkill):
         with to continue installation.
         :param message: message object associated with download completion
         """
-        # TODO: Use Notification API from ovos_utils
         if message.data.get("success"):
+            LOG.info(f"Showing Download Complete Notification")
             text = self.translate("notify_download_complete")
-            notification_data = {
-                "sender": self.skill_id,
-                "text": text,
-                "action": "update.gui.continue_installation",
-                "type": "transient",
-                "style": "info",
-                "callback_data": {**message.data, **{"notification": text}}
-            }
+            self.gui.show_notification(
+                content=text,
+                action="update.gui.continue_installation",
+                callback_data={**message.data, **{"notification": text}})
+
         else:
+            LOG.info(f"Showing Download Failed Notification")
             text = self.translate("notify_download_failed")
-            notification_data = {
-                "sender": self.skill_id,
-                "text": text,
-                "type": "transient",
-                "style": "error",
-                "callback_data": {**message.data, **{"notification": text}}
-            }
-        LOG.info(f"Showing Download Complete Notification: {notification_data}")
-        self.bus.emit(message.forward("ovos.notification.api.set",
-                                      notification_data))
+            self.gui.show_notification(content=text,
+                                       style="error",
+                                       callback_data={**message.data,
+                                                      **{"notification": text}})
 
     def continue_os_installation(self, message):
         """
@@ -457,30 +466,22 @@ class UpdateSkill(NeonSkill):
         """
         self.bus.emit(message.forward(
             "ovos.notification.api.remove.controlled"))
-        # TODO: Use Notification API from ovos_utils
         if message.data.get("success"):
+            LOG.info("Showing Write Complete Notification")
             text = self.translate("notify_installation_complete")
-            notification_data = {
-                "sender": self.skill_id,
-                "text": text,
-                "action": "update.gui.finish_installation",
-                "type": "transient",
-                "style": "info",
-                "callback_data": {**message.data, **{"notification": text}}
-            }
+            self.gui.show_notification(content=text,
+                                       action="update.gui.finish_installation",
+                                       callback_data={**message.data,
+                                                      **{"notification": text}})
+
         else:
+            LOG.info("Showing Write Failed Notification")
             text = self.translate("notify_installation_failed")
-            notification_data = {
-                "sender": self.skill_id,
-                "text": text,
-                "action": "update.gui.finish_installation",
-                "type": "transient",
-                "style": "error",
-                "callback_data": {**message.data, **{"notification": text}}
-            }
-        LOG.info(f"Showing Download Complete Notification: {notification_data}")
-        self.bus.emit(message.forward("ovos.notification.api.set",
-                                      notification_data))
+            self.gui.show_notification(content=text,
+                                       action="update.gui.finish_installation",
+                                       style="error",
+                                       callback_data={**message.data,
+                                                      **{"notification": text}})
 
     def finish_os_installation(self, message):
         """
