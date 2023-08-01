@@ -29,11 +29,9 @@
 import os
 
 from random import randint
-from threading import Event
 from typing import Optional
 from adapt.intent import IntentBuilder
 from neon_utils.validator_utils import numeric_confirmation_validator
-from ovos_bus_client import Message
 from ovos_utils import classproperty
 from ovos_utils.log import LOG
 from ovos_utils.process_utils import RuntimeRequirements
@@ -112,8 +110,17 @@ class UpdateSkill(NeonSkill):
         return self.settings.get("image_drive") or "/dev/sdb"
 
     def _on_ready(self, message):
-        LOG.debug("Checking latest core version")
-        self._check_latest_core_release(message)
+        if self.check_squashfs and self._check_squashfs_update(message):
+            if self.notify_updates:
+                text = self.dialog_renderer.render("notify_os_update_available")
+                LOG.info("OS Update Available")
+                callback_data = {**message.data, **{"notification": text}}
+                self.gui.show_notification(text,
+                                           action="update.gui.install_update",
+                                           callback_data=callback_data)
+        else:
+            LOG.debug("Checking latest core version")
+            self._check_latest_core_release(message)
 
         update_stat = self._check_update_status()
         LOG.debug(f"Update status is {update_stat}")
@@ -368,7 +375,8 @@ class UpdateSkill(NeonSkill):
             self.bus.emit(message.forward("neon.download_os_image",
                                           {"url": self.image_url}))
             self.speak_dialog("drive_instructions")
-            # TODO: Sticky notification during download
+            self.gui.show_controlled_notification(
+                self.translate("notify_downloading_os"))
         else:
             self.speak_dialog("not_updating")
 
@@ -413,6 +421,7 @@ class UpdateSkill(NeonSkill):
         with to continue installation.
         :param message: message object associated with download completion
         """
+        self.gui.remove_controlled_notification()
         if message.data.get("success"):
             LOG.info(f"Showing Download Complete Notification")
             text = self.translate("notify_download_complete")

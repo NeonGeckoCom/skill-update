@@ -52,6 +52,8 @@ dialog:
   - "update_system"
   - "notify_downloading_update"
   - "update_restarting"
+  - "notify_os_update_available"
+  - "notify_downloading_os"
 # regex entities, not necessarily filenames
 regex: []
 intents:
