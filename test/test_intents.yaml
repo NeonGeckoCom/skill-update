@@ -25,8 +25,11 @@ en-us:
   core_version.intent:
     - what version am I on
     - what version are you on
+    - what version are you running
+    - Neon what version are you running
     - Neon what version is installed
     - Mycroft what version is installed
+    - Mycroft what version is running
     - what is your core version
     - Neon what is my core version
     - what is my version number
