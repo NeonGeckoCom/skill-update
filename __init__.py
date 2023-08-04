@@ -48,13 +48,22 @@ class UpdateSkill(NeonSkill):
         self.latest_core_ver = None
         self._update_filename = "update_signal"
         self._os_updates_supported = None
+        self._update_interval_seconds = 3600
 
-        self.add_event('mycroft.ready', self._on_ready)
+        self.add_event('mycroft.ready', self._check_for_updates)
         self.add_event("update.gui.continue_installation",
                        self.continue_os_installation)
         self.add_event("update.gui.finish_installation",
                        self.finish_os_installation)
         self.add_event("update.gui.install_update", self.handle_update_device)
+
+        if self.notify_updates:
+            LOG.info("Scheduling periodic update checks")
+            # TODO: `when` can be `None` but current type annotations are wrong
+            self.schedule_repeating_event(self._check_for_updates,
+                                          self._update_interval_seconds,
+                                          self._update_interval_seconds,
+                                          name="check_for_updates")
 
     @classproperty
     def runtime_requirements(self):
@@ -89,11 +98,11 @@ class UpdateSkill(NeonSkill):
                                       self.os_updates_supported))
 
     @property
-    def notify_updates(self):
+    def notify_updates(self) -> bool:
         return self.settings.get("notify_updates", True)
 
     @property
-    def include_prerelease(self):
+    def include_prerelease(self) -> bool:
         return self.settings.get("include_prerelease", False)
 
     @include_prerelease.setter
@@ -102,14 +111,14 @@ class UpdateSkill(NeonSkill):
         self.settings.store()
 
     @property
-    def image_url(self):
+    def image_url(self) -> Optional[str]:
         return self.settings.get("image_url")
 
     @property
-    def image_drive(self):
+    def image_drive(self) -> Optional[str]:
         return self.settings.get("image_drive") or "/dev/sdb"
 
-    def _on_ready(self, message):
+    def _check_for_updates(self, message):
         if self.check_squashfs and self._check_squashfs_update(message):
             if self.notify_updates:
                 text = self.dialog_renderer.render("notify_os_update_available")
