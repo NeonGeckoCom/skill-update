@@ -80,7 +80,7 @@ class TestSkill(unittest.TestCase):
         # self.assertIsNotNone(self.skill.image_url)
         self.assertIsInstance(self.skill.image_drive, str)
 
-        event_names = [e[0] for e in self.skill.events]
+        event_names = [e[0] for e in self.skill.event_scheduler.events]
         self.assertIn(f"{self.skill.skill_id}:check_for_updates", event_names)
 
     def test_handle_core_version(self):
