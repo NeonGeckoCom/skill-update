@@ -186,8 +186,7 @@ class UpdateSkill(NeonSkill):
         :param message: message object associated with request
         """
         # Explicitly enabled for initramfs checks that involve file downloads
-        if get_user_prefs(message)['response_mode'].get('hesitation') or \
-                self.check_initramfs:
+        if get_user_prefs(message)['response_mode'].get('hesitation'):
             self.speak_dialog("check_updates")
         initramfs_available = False
         squashfs_available = False
