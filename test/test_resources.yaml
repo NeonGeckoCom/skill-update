@@ -54,6 +54,9 @@ dialog:
   - "update_restarting"
   - "notify_os_update_available"
   - "notify_downloading_os"
+  - "help_online"
+  - "help_support"
+  - "update_initramfs_success"
 # regex entities, not necessarily filenames
 regex: []
 intents:

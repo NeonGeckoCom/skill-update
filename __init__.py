@@ -193,31 +193,36 @@ class UpdateSkill(NeonSkill):
 
         if self.check_initramfs:
             initramfs_available = self._check_initramfs_update(message)
+            LOG.info(f"initramfs_available={initramfs_available}")
         if self.check_squashfs:
             squashfs_available = self._check_squashfs_update(message)
+            LOG.info(f"squashfs_available={squashfs_available}")
 
         if initramfs_available or squashfs_available:
             resp = self.ask_yesno("update_system")
             if resp == "yes":
                 self.speak_dialog("starting_update", wait=True)
-
+                self.gui.show_controlled_notification(
+                    self.translate("notify_downloading_update"))
                 if initramfs_available:
                     LOG.info("Updating initramfs")
+                    # Force update since we already checked for updates
                     resp = self.bus.wait_for_response(
-                        message.forward("neon.update_initramfs"), timeout=30)
+                        message.forward("neon.update_initramfs",
+                                        {"force_update": True}), timeout=60)
                     if resp and resp.data.get("updated"):
                         LOG.info("initramfs updated")
-                        # TODO: Speak?
+                        self.speak_dialog("update_initramfs_success")
                     else:
                         error = resp.data.get("error")
                         LOG.error(f"initramfs update failed: {error}")
-                        self.speak_dialog("error_updating_os")
+                        self.speak_dialog("error_updating_os",
+                                          {"help":
+                                           self.translate("help_support")})
+                        self.gui.remove_controlled_notification()
                         return
                 if squashfs_available:
                     self._write_update_signal("squashfs")
-
-                    self.gui.show_controlled_notification(
-                        self.translate("notify_downloading_update"))
 
                     LOG.info("Updating squashfs")
                     resp = self.bus.wait_for_response(
@@ -225,7 +230,10 @@ class UpdateSkill(NeonSkill):
                     if not resp:
                         LOG.warning(f"Timed out waiting for download")
                         self.gui.remove_controlled_notification()
-                        self.speak_dialog("error_updating_os")
+                        self.speak_dialog("error_updating_os",
+                                          {"help":
+                                           self.translate("help_online")})
+                        self.gui.remove_controlled_notification()
                         return
                     self.gui.remove_controlled_notification()
                     if resp.data.get("new_version"):
@@ -238,9 +246,9 @@ class UpdateSkill(NeonSkill):
                             error = resp.data.get("error")
                         LOG.error(f"squashfs update failed: {error}")
                         self.speak_dialog("error_updating_os")
+                        self.gui.remove_controlled_notification()
                         return
-
-                return
+                self.gui.remove_controlled_notification()
         # No OS update available or user declined, check core updates
         self._check_package_update(message)
 
