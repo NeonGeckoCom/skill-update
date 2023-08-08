@@ -206,8 +206,10 @@ class UpdateSkill(NeonSkill):
                     self.translate("notify_downloading_update"))
                 if initramfs_available:
                     LOG.info("Updating initramfs")
+                    # Force update since we already checked for updates
                     resp = self.bus.wait_for_response(
-                        message.forward("neon.update_initramfs"), timeout=60)
+                        message.forward("neon.update_initramfs",
+                                        {"force_update": True}), timeout=60)
                     if resp and resp.data.get("updated"):
                         LOG.info("initramfs updated")
                         self.speak_dialog("update_initramfs_success")
