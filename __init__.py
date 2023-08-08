@@ -207,11 +207,13 @@ class UpdateSkill(NeonSkill):
                         message.forward("neon.update_initramfs"), timeout=30)
                     if resp and resp.data.get("updated"):
                         LOG.info("initramfs updated")
-                        # TODO: Speak?
+                        self.speak_dialog("update_initramfs_success")
                     else:
                         error = resp.data.get("error")
                         LOG.error(f"initramfs update failed: {error}")
-                        self.speak_dialog("error_updating_os")
+                        self.speak_dialog("error_updating_os",
+                                          {"help":
+                                           self.translate("help_support")})
                         return
                 if squashfs_available:
                     self._write_update_signal("squashfs")
@@ -225,7 +227,9 @@ class UpdateSkill(NeonSkill):
                     if not resp:
                         LOG.warning(f"Timed out waiting for download")
                         self.gui.remove_controlled_notification()
-                        self.speak_dialog("error_updating_os")
+                        self.speak_dialog("error_updating_os",
+                                          {"help":
+                                           self.translate("help_online")})
                         return
                     self.gui.remove_controlled_notification()
                     if resp.data.get("new_version"):
