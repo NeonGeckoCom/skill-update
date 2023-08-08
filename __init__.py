@@ -200,11 +200,12 @@ class UpdateSkill(NeonSkill):
             resp = self.ask_yesno("update_system")
             if resp == "yes":
                 self.speak_dialog("starting_update", wait=True)
-
+                self.gui.show_controlled_notification(
+                    self.translate("notify_downloading_update"))
                 if initramfs_available:
                     LOG.info("Updating initramfs")
                     resp = self.bus.wait_for_response(
-                        message.forward("neon.update_initramfs"), timeout=30)
+                        message.forward("neon.update_initramfs"), timeout=60)
                     if resp and resp.data.get("updated"):
                         LOG.info("initramfs updated")
                         self.speak_dialog("update_initramfs_success")
@@ -214,12 +215,10 @@ class UpdateSkill(NeonSkill):
                         self.speak_dialog("error_updating_os",
                                           {"help":
                                            self.translate("help_support")})
+                        self.gui.remove_controlled_notification()
                         return
                 if squashfs_available:
                     self._write_update_signal("squashfs")
-
-                    self.gui.show_controlled_notification(
-                        self.translate("notify_downloading_update"))
 
                     LOG.info("Updating squashfs")
                     resp = self.bus.wait_for_response(
@@ -230,6 +229,7 @@ class UpdateSkill(NeonSkill):
                         self.speak_dialog("error_updating_os",
                                           {"help":
                                            self.translate("help_online")})
+                        self.gui.remove_controlled_notification()
                         return
                     self.gui.remove_controlled_notification()
                     if resp.data.get("new_version"):
@@ -242,9 +242,9 @@ class UpdateSkill(NeonSkill):
                             error = resp.data.get("error")
                         LOG.error(f"squashfs update failed: {error}")
                         self.speak_dialog("error_updating_os")
+                        self.gui.remove_controlled_notification()
                         return
-
-                return
+                self.gui.remove_controlled_notification()
         # No OS update available or user declined, check core updates
         self._check_package_update(message)
 
