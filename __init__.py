@@ -193,8 +193,10 @@ class UpdateSkill(NeonSkill):
 
         if self.check_initramfs:
             initramfs_available = self._check_initramfs_update(message)
+            LOG.info(f"initramfs_available={initramfs_available}")
         if self.check_squashfs:
             squashfs_available = self._check_squashfs_update(message)
+            LOG.info(f"squashfs_available={squashfs_available}")
 
         if initramfs_available or squashfs_available:
             resp = self.ask_yesno("update_system")
