@@ -213,6 +213,8 @@ class UpdateSkill(NeonSkill):
                     if resp and resp.data.get("updated"):
                         LOG.info("initramfs updated")
                         self.speak_dialog("update_initramfs_success")
+                        if squashfs_available:
+                            self.speak_dialog("update_continuing")
                     else:
                         error = resp.data.get("error")
                         LOG.error(f"initramfs update failed: {error}")
