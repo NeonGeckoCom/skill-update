@@ -57,6 +57,7 @@ dialog:
   - "help_online"
   - "help_support"
   - "update_initramfs_success"
+  - "update_continuing"
 # regex entities, not necessarily filenames
 regex: []
 intents:
