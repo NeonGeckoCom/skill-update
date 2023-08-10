@@ -48,6 +48,7 @@ class UpdateSkill(NeonSkill):
         self.latest_core_ver = None
         self._update_filename = "update_signal"
         self._os_updates_supported = None
+        self._default_prerelease = None
 
         self.add_event('mycroft.ready', self._on_ready)
         self.add_event("update.gui.continue_installation",
@@ -67,6 +68,21 @@ class UpdateSkill(NeonSkill):
                                    no_internet_fallback=False,
                                    no_network_fallback=False,
                                    no_gui_fallback=True)
+
+    @property
+    def default_prerelease(self) -> bool:
+        if self._default_prerelease is None:
+            try:
+                import json
+                with open("/opt/neon/build_info.json") as f:
+                    image_meta = json.load(f)
+                self._default_prerelease = 'a' in image_meta['core']['version']
+                LOG.info(f"Determined image prerelease status: "
+                         f"{self._default_prerelease}")
+            except Exception as e:
+                LOG.info(f"Assuming prerelease is false: {e}")
+                self._default_prerelease = False
+        return self._default_prerelease
 
     @property
     def os_updates_supported(self) -> bool:
@@ -89,12 +105,12 @@ class UpdateSkill(NeonSkill):
                                       self.os_updates_supported))
 
     @property
-    def notify_updates(self):
+    def notify_updates(self) -> bool:
         return self.settings.get("notify_updates", True)
 
     @property
-    def include_prerelease(self):
-        return self.settings.get("include_prerelease", False)
+    def include_prerelease(self) -> bool:
+        return self.settings.get("include_prerelease", self.default_prerelease)
 
     @include_prerelease.setter
     def include_prerelease(self, value: bool):
@@ -204,12 +220,14 @@ class UpdateSkill(NeonSkill):
                 self.speak_dialog("starting_update", wait=True)
                 self.gui.show_controlled_notification(
                     self.translate("notify_downloading_update"))
+                track = "dev" if self.include_prerelease else "master"
                 if initramfs_available:
                     LOG.info("Updating initramfs")
                     # Force update since we already checked for updates
                     resp = self.bus.wait_for_response(
                         message.forward("neon.update_initramfs",
-                                        {"force_update": True}), timeout=60)
+                                        {"force_update": True,
+                                         "track": track}), timeout=60)
                     if resp and resp.data.get("updated"):
                         LOG.info("initramfs updated")
                         self.speak_dialog("update_initramfs_success")
@@ -228,7 +246,8 @@ class UpdateSkill(NeonSkill):
 
                     LOG.info("Updating squashfs")
                     resp = self.bus.wait_for_response(
-                        message.forward("neon.update_squashfs"), timeout=1800)
+                        message.forward("neon.update_squashfs",
+                                        {"track": track}), timeout=1800)
                     if not resp:
                         LOG.warning(f"Timed out waiting for download")
                         self.gui.remove_controlled_notification()
@@ -259,7 +278,9 @@ class UpdateSkill(NeonSkill):
         Check for an updated initramfs image
         """
         resp = self.bus.wait_for_response(message.forward(
-            "neon.check_update_initramfs"), timeout=10)
+            "neon.check_update_initramfs",
+            {"track": "dev" if self.include_prerelease else "master"}),
+            timeout=10)
         if resp and resp.data.get("update_available"):
             LOG.info("Initramfs update available")
             return True
@@ -271,7 +292,9 @@ class UpdateSkill(NeonSkill):
         Check for an updated squashfs image
         """
         resp = self.bus.wait_for_response(message.forward(
-            "neon.check_update_squashfs"), timeout=10)
+            "neon.check_update_squashfs",
+            {"track": "dev" if self.include_prerelease else "master"}),
+            timeout=10)
         if resp and resp.data.get("update_available"):
             LOG.info("Squashfs update available")
             return True
