@@ -204,12 +204,14 @@ class UpdateSkill(NeonSkill):
                 self.speak_dialog("starting_update", wait=True)
                 self.gui.show_controlled_notification(
                     self.translate("notify_downloading_update"))
+                track = "dev" if self.include_prerelease else "master"
                 if initramfs_available:
                     LOG.info("Updating initramfs")
                     # Force update since we already checked for updates
                     resp = self.bus.wait_for_response(
                         message.forward("neon.update_initramfs",
-                                        {"force_update": True}), timeout=60)
+                                        {"force_update": True,
+                                         "track": track}), timeout=60)
                     if resp and resp.data.get("updated"):
                         LOG.info("initramfs updated")
                         self.speak_dialog("update_initramfs_success")
@@ -228,7 +230,8 @@ class UpdateSkill(NeonSkill):
 
                     LOG.info("Updating squashfs")
                     resp = self.bus.wait_for_response(
-                        message.forward("neon.update_squashfs"), timeout=1800)
+                        message.forward("neon.update_squashfs",
+                                        {"track": track}), timeout=1800)
                     if not resp:
                         LOG.warning(f"Timed out waiting for download")
                         self.gui.remove_controlled_notification()
@@ -259,7 +262,9 @@ class UpdateSkill(NeonSkill):
         Check for an updated initramfs image
         """
         resp = self.bus.wait_for_response(message.forward(
-            "neon.check_update_initramfs"), timeout=10)
+            "neon.check_update_initramfs",
+            {"track": "dev" if self.include_prerelease else "master"}),
+            timeout=10)
         if resp and resp.data.get("update_available"):
             LOG.info("Initramfs update available")
             return True
@@ -271,7 +276,9 @@ class UpdateSkill(NeonSkill):
         Check for an updated squashfs image
         """
         resp = self.bus.wait_for_response(message.forward(
-            "neon.check_update_squashfs"), timeout=10)
+            "neon.check_update_squashfs",
+            {"track": "dev" if self.include_prerelease else "master"}),
+            timeout=10)
         if resp and resp.data.get("update_available"):
             LOG.info("Squashfs update available")
             return True
