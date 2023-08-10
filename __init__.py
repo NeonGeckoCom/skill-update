@@ -48,6 +48,7 @@ class UpdateSkill(NeonSkill):
         self.latest_core_ver = None
         self._update_filename = "update_signal"
         self._os_updates_supported = None
+        self._default_prerelease = None
 
         self.add_event('mycroft.ready', self._on_ready)
         self.add_event("update.gui.continue_installation",
@@ -67,6 +68,21 @@ class UpdateSkill(NeonSkill):
                                    no_internet_fallback=False,
                                    no_network_fallback=False,
                                    no_gui_fallback=True)
+
+    @property
+    def default_prerelease(self) -> bool:
+        if self._default_prerelease is None:
+            try:
+                import json
+                with open("/opt/neon/build_info.json") as f:
+                    image_meta = json.load(f)
+                self._default_prerelease = 'a' in image_meta['core']['version']
+                LOG.info(f"Determined image prerelease status: "
+                         f"{self._default_prerelease}")
+            except Exception as e:
+                LOG.info(f"Assuming prerelease is false: {e}")
+                self._default_prerelease = False
+        return self._default_prerelease
 
     @property
     def os_updates_supported(self) -> bool:
@@ -89,12 +105,12 @@ class UpdateSkill(NeonSkill):
                                       self.os_updates_supported))
 
     @property
-    def notify_updates(self):
+    def notify_updates(self) -> bool:
         return self.settings.get("notify_updates", True)
 
     @property
-    def include_prerelease(self):
-        return self.settings.get("include_prerelease", False)
+    def include_prerelease(self) -> bool:
+        return self.settings.get("include_prerelease", self.default_prerelease)
 
     @include_prerelease.setter
     def include_prerelease(self, value: bool):
