@@ -38,15 +38,24 @@ from ovos_utils.process_utils import RuntimeRequirements
 from ovos_utils.network_utils import is_connected_http
 from neon_utils.skills import NeonSkill
 from neon_utils.user_utils import get_user_prefs
-from mycroft.skills import intent_file_handler, intent_handler
+from ovos_workshop.decorators import intent_file_handler, intent_handler
 
 
 class UpdateSkill(NeonSkill):
     def __init__(self, **kwargs):
         NeonSkill.__init__(self, **kwargs)
-        self.current_ver = None
-        self.latest_ver = None
+        self.current_core_ver = None
+        self.latest_core_ver = None
         self._update_filename = "update_signal"
+        self._os_updates_supported = None
+        self._default_prerelease = None
+
+        self.add_event('mycroft.ready', self._on_ready)
+        self.add_event("update.gui.continue_installation",
+                       self.continue_os_installation)
+        self.add_event("update.gui.finish_installation",
+                       self.finish_os_installation)
+        self.add_event("update.gui.install_update", self.handle_update_device)
 
     @classproperty
     def runtime_requirements(self):
@@ -61,12 +70,47 @@ class UpdateSkill(NeonSkill):
                                    no_gui_fallback=True)
 
     @property
-    def notify_updates(self):
+    def default_prerelease(self) -> bool:
+        if self._default_prerelease is None:
+            try:
+                import json
+                with open("/opt/neon/build_info.json") as f:
+                    image_meta = json.load(f)
+                self._default_prerelease = 'a' in image_meta['core']['version']
+                LOG.info(f"Determined image prerelease status: "
+                         f"{self._default_prerelease}")
+            except Exception as e:
+                LOG.info(f"Assuming prerelease is false: {e}")
+                self._default_prerelease = False
+        return self._default_prerelease
+
+    @property
+    def os_updates_supported(self) -> bool:
+        if self._os_updates_supported is None:
+            try:
+                import neon_phal_plugin_device_updater
+                self._os_updates_supported = True
+            except ImportError:
+                self._os_updates_supported = False
+        return self._os_updates_supported
+
+    @property
+    def check_initramfs(self) -> bool:
+        return bool(self.settings.get("update_initramfs",
+                                      self.os_updates_supported))
+
+    @property
+    def check_squashfs(self) -> bool:
+        return bool(self.settings.get("update_squashfs",
+                                      self.os_updates_supported))
+
+    @property
+    def notify_updates(self) -> bool:
         return self.settings.get("notify_updates", True)
 
     @property
-    def include_prerelease(self):
-        return self.settings.get("include_prerelease", False)
+    def include_prerelease(self) -> bool:
+        return self.settings.get("include_prerelease", self.default_prerelease)
 
     @include_prerelease.setter
     def include_prerelease(self, value: bool):
@@ -81,25 +125,25 @@ class UpdateSkill(NeonSkill):
     def image_drive(self):
         return self.settings.get("image_drive") or "/dev/sdb"
 
-    # TODO: Move to __init__ after stable ovos-workshop
-    def initialize(self):
-        self.add_event('mycroft.ready', self._on_ready)
-        self.add_event("update.gui.continue_installation",
-                       self.continue_os_installation)
-        self.add_event("update.gui.finish_installation",
-                       self.finish_os_installation)
-        self.add_event("update.gui.install_update", self.handle_update_device)
-
     def _on_ready(self, message):
-        LOG.debug("Checking latest core version")
-        self._check_latest_core_release(message)
+        if self.check_squashfs and self._check_squashfs_update(message):
+            if self.notify_updates:
+                text = self.dialog_renderer.render("notify_os_update_available")
+                LOG.info("OS Update Available")
+                callback_data = {**message.data, **{"notification": text}}
+                self.gui.show_notification(text,
+                                           action="update.gui.install_update",
+                                           callback_data=callback_data)
+        else:
+            LOG.debug("Checking latest core version")
+            self._check_latest_core_release(message)
 
         update_stat = self._check_update_status()
         LOG.debug(f"Update status is {update_stat}")
         if not update_stat:
             # No update was attempted
             return
-        speak_version = self.pronounce_version(self.current_ver)
+        speak_version = self.pronounce_version(self.current_core_ver)
         if update_stat is True:
             LOG.debug("Update success")
             self.speak_dialog("notify_update_success",
@@ -120,17 +164,18 @@ class UpdateSkill(NeonSkill):
             timeout=15)
         if response:
             LOG.debug(f"Got response: {response.data}")
-            self.current_ver = response.data.get("installed_version")
-            self.latest_ver = response.data.get("latest_version") or \
+            self.current_core_ver = response.data.get("installed_version")
+            self.latest_core_ver = response.data.get("latest_version") or \
                 response.data.get("new_version")
-            if not self.latest_ver:
+            if not self.latest_core_ver:
                 LOG.error(f"Expected string version and got none in response: "
                           f"{response.data}")
-            elif self.latest_ver != self.current_ver and \
+            elif self.latest_core_ver != self.current_core_ver and \
                     self.notify_updates and \
                     message.msg_type in ("mycroft.ready", "neon.update.check"):
-                text = self.dialog_renderer.render("notify_update_available",
-                                                   {"version": self.latest_ver})
+                text = self.dialog_renderer.render(
+                    "notify_update_available",
+                    {"version": self.latest_core_ver})
                 LOG.info("Update Available")
                 callback_data = {**message.data, **{"notification": text}}
                 self.gui.show_notification(text,
@@ -156,10 +201,109 @@ class UpdateSkill(NeonSkill):
         Handle a user request to check for updates.
         :param message: message object associated with request
         """
+        # Explicitly enabled for initramfs checks that involve file downloads
         if get_user_prefs(message)['response_mode'].get('hesitation'):
             self.speak_dialog("check_updates")
+        initramfs_available = False
+        squashfs_available = False
+
+        if self.check_initramfs:
+            initramfs_available = self._check_initramfs_update(message)
+            LOG.info(f"initramfs_available={initramfs_available}")
+        if self.check_squashfs:
+            squashfs_available = self._check_squashfs_update(message)
+            LOG.info(f"squashfs_available={squashfs_available}")
+
+        if initramfs_available or squashfs_available:
+            resp = self.ask_yesno("update_system")
+            if resp == "yes":
+                self.speak_dialog("starting_update", wait=True)
+                self.gui.show_controlled_notification(
+                    self.translate("notify_downloading_update"))
+                track = "dev" if self.include_prerelease else "master"
+                if initramfs_available:
+                    LOG.info("Updating initramfs")
+                    # Force update since we already checked for updates
+                    resp = self.bus.wait_for_response(
+                        message.forward("neon.update_initramfs",
+                                        {"force_update": True,
+                                         "track": track}), timeout=60)
+                    if resp and resp.data.get("updated"):
+                        LOG.info("initramfs updated")
+                        self.speak_dialog("update_initramfs_success")
+                        if squashfs_available:
+                            self.speak_dialog("update_continuing")
+                    else:
+                        error = resp.data.get("error")
+                        LOG.error(f"initramfs update failed: {error}")
+                        self.speak_dialog("error_updating_os",
+                                          {"help":
+                                           self.translate("help_support")})
+                        self.gui.remove_controlled_notification()
+                        return
+                if squashfs_available:
+                    self._write_update_signal("squashfs")
+
+                    LOG.info("Updating squashfs")
+                    resp = self.bus.wait_for_response(
+                        message.forward("neon.update_squashfs",
+                                        {"track": track}), timeout=1800)
+                    if not resp:
+                        LOG.warning(f"Timed out waiting for download")
+                        self.gui.remove_controlled_notification()
+                        self.speak_dialog("error_updating_os",
+                                          {"help":
+                                           self.translate("help_online")})
+                        self.gui.remove_controlled_notification()
+                        return
+                    self.gui.remove_controlled_notification()
+                    if resp.data.get("new_version"):
+                        LOG.info("squashfs updated")
+                        self.speak_dialog("update_restarting", wait=True)
+                        self.bus.emit(message.forward("system.reboot"))
+                    else:
+                        error = "no response"
+                        if resp:
+                            error = resp.data.get("error")
+                        LOG.error(f"squashfs update failed: {error}")
+                        self.speak_dialog("error_updating_os")
+                        self.gui.remove_controlled_notification()
+                        return
+                self.gui.remove_controlled_notification()
+        # No OS update available or user declined, check core updates
+        self._check_package_update(message)
+
+    def _check_initramfs_update(self, message) -> bool:
+        """
+        Check for an updated initramfs image
+        """
+        resp = self.bus.wait_for_response(message.forward(
+            "neon.check_update_initramfs",
+            {"track": "dev" if self.include_prerelease else "master"}),
+            timeout=10)
+        if resp and resp.data.get("update_available"):
+            LOG.info("Initramfs update available")
+            return True
+        LOG.debug("No initramfs update")
+        return False
+
+    def _check_squashfs_update(self, message) -> bool:
+        """
+        Check for an updated squashfs image
+        """
+        resp = self.bus.wait_for_response(message.forward(
+            "neon.check_update_squashfs",
+            {"track": "dev" if self.include_prerelease else "master"}),
+            timeout=10)
+        if resp and resp.data.get("update_available"):
+            LOG.info("Squashfs update available")
+            return True
+        LOG.debug("No Squashfs update")
+        return False
+
+    def _check_package_update(self, message):
         self._check_latest_core_release(message)
-        if not all((self.current_ver, self.latest_ver)):
+        if not all((self.current_core_ver, self.latest_core_ver)):
             self.speak_dialog("check_error")
             return
 
@@ -169,22 +313,22 @@ class UpdateSkill(NeonSkill):
             self.speak_dialog("error_offline")
             return
 
-        if self.current_ver == self.latest_ver:
+        if self.current_core_ver == self.latest_core_ver:
             resp = self.ask_yesno(
                 "up_to_date",
-                {"version": self.pronounce_version(self.current_ver)})
+                {"version": self.pronounce_version(self.current_core_ver)})
         else:
             resp = self.ask_yesno(
                 "update_core",
-                {"new": self.pronounce_version(self.latest_ver),
-                 "old": self.pronounce_version(self.current_ver)})
+                {"new": self.pronounce_version(self.latest_core_ver),
+                 "old": self.pronounce_version(self.current_core_ver)})
         if resp == "yes":
             if message.data.get('notification'):
                 self._dismiss_notification(message)
-            self._write_update_signal(self.latest_ver)
+            self._write_update_signal(self.latest_core_ver)
             self.speak_dialog("starting_update", wait=True)
             self.bus.emit(message.forward("neon.core_updater.start_update",
-                                          {"version": self.latest_ver}))
+                                          {"version": self.latest_core_ver}))
         else:
             self.speak_dialog("not_updating")
 
@@ -213,9 +357,12 @@ class UpdateSkill(NeonSkill):
             expected_ver = f.read()
         os.remove(update_filepath)
         LOG.info(f"Removed update signal at {update_filepath}")
-        if self.current_ver != expected_ver:
+        if expected_ver == "squashfs":
+            LOG.info("Updated squashFS")
+            return True
+        if self.current_core_ver != expected_ver:
             LOG.error(f"Update expected {expected_ver} but "
-                      f"{self.current_ver} is installed")
+                      f"{self.current_core_ver} is installed")
             return False
         return True
 
@@ -226,7 +373,7 @@ class UpdateSkill(NeonSkill):
         :param message: message object associated with request
         """
         self._check_latest_core_release(message)
-        version = self.pronounce_version(self.current_ver)
+        version = self.pronounce_version(self.current_core_ver)
         LOG.debug(version)
         self.speak_dialog("core_version", {"version": version})
 
@@ -260,7 +407,8 @@ class UpdateSkill(NeonSkill):
             self.bus.emit(message.forward("neon.download_os_image",
                                           {"url": self.image_url}))
             self.speak_dialog("drive_instructions")
-            # TODO: Sticky notification during download
+            self.gui.show_controlled_notification(
+                self.translate("notify_downloading_os"))
         else:
             self.speak_dialog("not_updating")
 
@@ -305,29 +453,22 @@ class UpdateSkill(NeonSkill):
         with to continue installation.
         :param message: message object associated with download completion
         """
-        # TODO: Use Notification API from ovos_utils
+        self.gui.remove_controlled_notification()
         if message.data.get("success"):
+            LOG.info(f"Showing Download Complete Notification")
             text = self.translate("notify_download_complete")
-            notification_data = {
-                "sender": self.skill_id,
-                "text": text,
-                "action": "update.gui.continue_installation",
-                "type": "transient",
-                "style": "info",
-                "callback_data": {**message.data, **{"notification": text}}
-            }
+            self.gui.show_notification(
+                content=text,
+                action="update.gui.continue_installation",
+                callback_data={**message.data, **{"notification": text}})
+
         else:
+            LOG.info(f"Showing Download Failed Notification")
             text = self.translate("notify_download_failed")
-            notification_data = {
-                "sender": self.skill_id,
-                "text": text,
-                "type": "transient",
-                "style": "error",
-                "callback_data": {**message.data, **{"notification": text}}
-            }
-        LOG.info(f"Showing Download Complete Notification: {notification_data}")
-        self.bus.emit(message.forward("ovos.notification.api.set",
-                                      notification_data))
+            self.gui.show_notification(content=text,
+                                       style="error",
+                                       callback_data={**message.data,
+                                                      **{"notification": text}})
 
     def continue_os_installation(self, message):
         """
@@ -366,30 +507,22 @@ class UpdateSkill(NeonSkill):
         """
         self.bus.emit(message.forward(
             "ovos.notification.api.remove.controlled"))
-        # TODO: Use Notification API from ovos_utils
         if message.data.get("success"):
+            LOG.info("Showing Write Complete Notification")
             text = self.translate("notify_installation_complete")
-            notification_data = {
-                "sender": self.skill_id,
-                "text": text,
-                "action": "update.gui.finish_installation",
-                "type": "transient",
-                "style": "info",
-                "callback_data": {**message.data, **{"notification": text}}
-            }
+            self.gui.show_notification(content=text,
+                                       action="update.gui.finish_installation",
+                                       callback_data={**message.data,
+                                                      **{"notification": text}})
+
         else:
+            LOG.info("Showing Write Failed Notification")
             text = self.translate("notify_installation_failed")
-            notification_data = {
-                "sender": self.skill_id,
-                "text": text,
-                "action": "update.gui.finish_installation",
-                "type": "transient",
-                "style": "error",
-                "callback_data": {**message.data, **{"notification": text}}
-            }
-        LOG.info(f"Showing Download Complete Notification: {notification_data}")
-        self.bus.emit(message.forward("ovos.notification.api.set",
-                                      notification_data))
+            self.gui.show_notification(content=text,
+                                       action="update.gui.finish_installation",
+                                       style="error",
+                                       callback_data={**message.data,
+                                                      **{"notification": text}})
 
     def finish_os_installation(self, message):
         """
