@@ -96,9 +96,11 @@ class UpdateSkill(NeonSkill):
                     import json
                     build_info = json.load(f)
                 if build_info.get("base_os", {}).get("time", 0) <= 1675350840.0:
-                    LOG.debug("Image too old for OS update support")
+                    LOG.info("Image too old for OS update support")
                     self._os_updates_supported = False
-                self._os_updates_supported = True
+                else:
+                    LOG.info("Image should support OS updates")
+                    self._os_updates_supported = True
             except ImportError:
                 self._os_updates_supported = False
             except FileNotFoundError:
