@@ -95,7 +95,8 @@ class UpdateSkill(NeonSkill):
                 with open("/opt/neon/build_info.json", "r") as f:
                     import json
                     build_info = json.load(f)
-                if build_info.get("base_os", {}).get("time", 0) <= 1675350840.0:
+                build_time = build_info.get("base_os", {}).get("time", 0)
+                if isinstance(build_time, float) and build_time <= 1675350840.0:
                     LOG.info("Image too old for OS update support")
                     self._os_updates_supported = False
                 else:
