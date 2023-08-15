@@ -86,12 +86,27 @@ class UpdateSkill(NeonSkill):
 
     @property
     def os_updates_supported(self) -> bool:
+        """
+        Check if OS updates are supported where this skill is running.
+        """
         if self._os_updates_supported is None:
             try:
                 import neon_phal_plugin_device_updater
+                with open("/opt/neon/build_info.json", "r") as f:
+                    import json
+                    build_info = json.load(f)
+                if build_info.get("base_os", {}).get("time", 0) <= 1675350840.0:
+                    LOG.debug("Image too old for OS update support")
+                    self._os_updates_supported = False
                 self._os_updates_supported = True
             except ImportError:
                 self._os_updates_supported = False
+            except FileNotFoundError:
+                self._os_updates_supported = False
+            except Exception as e:
+                LOG.exception(e)
+                self._os_updates_supported = False
+
         return self._os_updates_supported
 
     @property
