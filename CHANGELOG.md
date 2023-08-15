@@ -1,60 +1,12 @@
 # Changelog
 
-## [1.0.1a7](https://github.com/NeonGeckoCom/skill-update/tree/1.0.1a7) (2023-08-10)
+## [2.0.1a1](https://github.com/NeonGeckoCom/skill-update/tree/2.0.1a1) (2023-08-15)
 
-[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/1.0.1a6...1.0.1a7)
-
-**Merged pull requests:**
-
-- Add support for initramFS and SquashFS update tracks [\#65](https://github.com/NeonGeckoCom/skill-update/pull/65) ([NeonDaniel](https://github.com/NeonDaniel))
-
-## [1.0.1a6](https://github.com/NeonGeckoCom/skill-update/tree/1.0.1a6) (2023-08-09)
-
-[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/1.0.1a5...1.0.1a6)
+[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/2.0.0...2.0.1a1)
 
 **Merged pull requests:**
 
-- More Update Confirmation Dialog [\#64](https://github.com/NeonGeckoCom/skill-update/pull/64) ([NeonDaniel](https://github.com/NeonDaniel))
-
-## [1.0.1a5](https://github.com/NeonGeckoCom/skill-update/tree/1.0.1a5) (2023-08-08)
-
-[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/1.0.1a4...1.0.1a5)
-
-**Merged pull requests:**
-
-- Improved Update dialog and flow [\#63](https://github.com/NeonGeckoCom/skill-update/pull/63) ([NeonDaniel](https://github.com/NeonDaniel))
-
-## [1.0.1a4](https://github.com/NeonGeckoCom/skill-update/tree/1.0.1a4) (2023-08-07)
-
-[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/1.0.1a3...1.0.1a4)
-
-**Merged pull requests:**
-
-- Adjust dialog for updates [\#62](https://github.com/NeonGeckoCom/skill-update/pull/62) ([NeonDaniel](https://github.com/NeonDaniel))
-
-## [1.0.1a3](https://github.com/NeonGeckoCom/skill-update/tree/1.0.1a3) (2023-08-04)
-
-[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/1.0.1a2...1.0.1a3)
-
-**Merged pull requests:**
-
-- Expend version info intent [\#58](https://github.com/NeonGeckoCom/skill-update/pull/58) ([strugee](https://github.com/strugee))
-
-## [1.0.1a2](https://github.com/NeonGeckoCom/skill-update/tree/1.0.1a2) (2023-08-02)
-
-[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/1.0.1a1...1.0.1a2)
-
-**Merged pull requests:**
-
-- Add SquashFS update check to init and Add image download notification [\#60](https://github.com/NeonGeckoCom/skill-update/pull/60) ([NeonDaniel](https://github.com/NeonDaniel))
-
-## [1.0.1a1](https://github.com/NeonGeckoCom/skill-update/tree/1.0.1a1) (2023-07-31)
-
-[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/1.0.0...1.0.1a1)
-
-**Merged pull requests:**
-
-- Support OS Updates [\#59](https://github.com/NeonGeckoCom/skill-update/pull/59) ([NeonDaniel](https://github.com/NeonDaniel))
+- OS Update Check Backwards-Compat [\#67](https://github.com/NeonGeckoCom/skill-update/pull/67) ([NeonDaniel](https://github.com/NeonDaniel))
 
 
 
