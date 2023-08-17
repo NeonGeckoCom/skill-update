@@ -382,7 +382,48 @@ class TestSkill(unittest.TestCase):
         on_notification_removed.assert_called_once()
         on_notification_set.assert_called_once()
         message = on_notification_set.call_args[0][0]
-        self.assertEqual(message.data['text'], 'OS Installation Failed')
+        self.assertEqual(message.data['text'],
+                         'OS Installation Failed: Unknown Error')
+        self.assertEqual(message.data['style'], 'error')
+        self.assertEqual(message.data['action'],
+                         'update.gui.finish_installation')
+
+        # `no_valid_device`, `no_image_file`, something else
+        failure = Message("neon.install_os_image.complete",
+                          {"success": False,
+                           "error": "no_valid_device"})
+        self.skill.bus.once("ovos.notification.api.set",
+                            on_notification_set)
+        self.skill.bus.emit(failure)
+        message = on_notification_set.call_args[0][0]
+        self.assertEqual(message.data['text'],
+                         'OS Installation Failed: No Device to Write')
+        self.assertEqual(message.data['style'], 'error')
+        self.assertEqual(message.data['action'],
+                         'update.gui.finish_installation')
+
+        failure = Message("neon.install_os_image.complete",
+                          {"success": False,
+                           "error": "no_image_file"})
+        self.skill.bus.once("ovos.notification.api.set",
+                            on_notification_set)
+        self.skill.bus.emit(failure)
+        message = on_notification_set.call_args[0][0]
+        self.assertEqual(message.data['text'],
+                         'OS Installation Failed: No Image to Write')
+        self.assertEqual(message.data['style'], 'error')
+        self.assertEqual(message.data['action'],
+                         'update.gui.finish_installation')
+
+        failure = Message("neon.install_os_image.complete",
+                          {"success": False,
+                           "error": "Some error"})
+        self.skill.bus.once("ovos.notification.api.set",
+                            on_notification_set)
+        self.skill.bus.emit(failure)
+        message = on_notification_set.call_args[0][0]
+        self.assertEqual(message.data['text'],
+                         'OS Installation Failed: Some error')
         self.assertEqual(message.data['style'], 'error')
         self.assertEqual(message.data['action'],
                          'update.gui.finish_installation')
