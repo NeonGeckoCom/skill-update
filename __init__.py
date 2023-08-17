@@ -534,8 +534,11 @@ class UpdateSkill(NeonSkill):
                                                       **{"notification": text}})
 
         else:
-            LOG.info("Showing Write Failed Notification")
-            text = self.translate("notify_installation_failed")
+            error = message.data.get("error") or "error_unknown"
+            # `no_valid_device`, `no_image_file`, something else
+            LOG.info(f"Showing Write Failed Notification: {error}")
+            text = self.translate("notify_installation_failed",
+                                  {"error": self.translate(error)})
             self.gui.show_notification(content=text,
                                        action="update.gui.finish_installation",
                                        style="error",
