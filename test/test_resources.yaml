@@ -58,6 +58,9 @@ dialog:
   - "help_support"
   - "update_initramfs_success"
   - "update_continuing"
+  - "error_unknown"
+  - "no_image_file"
+  - "no_valid_device"
 # regex entities, not necessarily filenames
 regex: []
 intents:
