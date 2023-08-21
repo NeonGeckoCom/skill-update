@@ -72,6 +72,21 @@ class TestSkill(unittest.TestCase):
         from neon_utils.skills import NeonSkill
 
         self.assertIsInstance(self.skill, NeonSkill)
+        self.assertIsInstance(self.skill.default_prerelease, bool)
+        self.assertIsInstance(self.skill.os_updates_supported, bool)
+        self.assertIsInstance(self.skill.check_initramfs, bool)
+        self.assertIsInstance(self.skill.check_squashfs, bool)
+        self.assertIsInstance(self.skill.check_python, bool)
+        self.assertIsInstance(self.skill.notify_updates, bool)
+        self.assertEqual(self.skill.include_prerelease,
+                         self.skill.default_prerelease)
+        self.assertIsNone(self.skill.image_url)
+        self.assertIsInstance(self.skill.image_drive, str)
+
+        self.skill.include_prerelease = True
+        self.assertTrue(self.skill.include_prerelease)
+        self.skill.include_prerelease = False
+        self.assertFalse(self.skill.include_prerelease)
 
     def test_handle_core_version(self):
         real_check_release = self.skill._check_latest_core_release

@@ -71,6 +71,11 @@ class UpdateSkill(NeonSkill):
 
     @property
     def default_prerelease(self) -> bool:
+        """
+        Returns True if the shipped core version was a pre-release. Used
+        to determine if updates should consider pre-releases or stable releases
+        by default; a user requested branch should take priority over this.
+        """
         if self._default_prerelease is None:
             try:
                 import json
@@ -87,7 +92,7 @@ class UpdateSkill(NeonSkill):
     @property
     def os_updates_supported(self) -> bool:
         """
-        Check if OS updates are supported where this skill is running.
+        Returns True if OS updates are supported where this skill is running.
         """
         if self._os_updates_supported is None:
             try:
@@ -114,33 +119,65 @@ class UpdateSkill(NeonSkill):
 
     @property
     def check_initramfs(self) -> bool:
+        """
+        Returns True if InitramFS updates are enabled
+        """
         return bool(self.settings.get("update_initramfs",
                                       self.os_updates_supported))
 
     @property
     def check_squashfs(self) -> bool:
+        """
+        Returns True if SquashFS updates are enabled
+        """
         return bool(self.settings.get("update_squashfs",
                                       self.os_updates_supported))
 
     @property
+    def check_python(self) -> bool:
+        """
+        Returns True if (Core) Python package updates are enabled
+        """
+        return bool(self.settings.get("update_python",
+                                      not self.os_updates_supported))
+
+    @property
     def notify_updates(self) -> bool:
+        """
+        Returns True if the skill should generate notifications for available
+        updates.
+        """
         return self.settings.get("notify_updates", True)
 
     @property
     def include_prerelease(self) -> bool:
+        """
+        Returns True if updates should include alpha/pre-release versions.
+        """
         return self.settings.get("include_prerelease", self.default_prerelease)
 
     @include_prerelease.setter
     def include_prerelease(self, value: bool):
+        """
+        Explicitly set prerelease update inclusion
+        @param value: New pre-release setting
+        """
         self.settings['include_prerelease'] = value
         self.settings.store()
 
     @property
-    def image_url(self):
+    def image_url(self) -> Optional[str]:
+        """
+        Return a configured URL to download a clean OS image from.
+        """
         return self.settings.get("image_url")
 
     @property
-    def image_drive(self):
+    def image_drive(self) -> str:
+        """
+        Return a default device path to use for image creation
+            (default /dev/sdb).
+        """
         return self.settings.get("image_drive") or "/dev/sdb"
 
     def _on_ready(self, message):
@@ -288,8 +325,17 @@ class UpdateSkill(NeonSkill):
                         self.gui.remove_controlled_notification()
                         return
                 self.gui.remove_controlled_notification()
-        # No OS update available or user declined, check core updates
-        self._check_package_update(message)
+            else:
+                # User declined update
+                self.speak_dialog("not_updating")
+        elif self.check_python:
+            # OS Updates not supported
+            self._check_package_update(message)
+        else:
+            # OS already up to date
+            self.speak_dialog("up_to_date",
+                              {"version": self.pronounce_version(
+                                  self.current_core_ver)})
 
     def _check_initramfs_update(self, message) -> bool:
         """
@@ -332,9 +378,11 @@ class UpdateSkill(NeonSkill):
             return
 
         if self.current_core_ver == self.latest_core_ver:
-            resp = self.ask_yesno(
+            self.speak_dialog(
                 "up_to_date",
-                {"version": self.pronounce_version(self.current_core_ver)})
+                {"version": self.pronounce_version(self.current_core_ver)},
+                wait=True)
+            resp = self.ask_yesno("ask_update_anyways")
         else:
             resp = self.ask_yesno(
                 "update_core",
