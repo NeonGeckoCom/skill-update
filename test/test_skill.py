@@ -131,10 +131,18 @@ class TestSkill(unittest.TestCase):
         self.skill.handle_update_device(message)
         self.skill.speak_dialog.assert_called_with("check_error")
 
+        # Specify Python updates only
+        self.skill.settings["update_initramfs"] = False
+        self.skill.settings["update_squashfs"] = False
+        self.skill.settings["update_python"] = True
+        self.assertFalse(self.skill.check_initramfs)
+        self.assertFalse(self.skill.check_squashfs)
+        self.assertTrue(self.skill.check_python)
+
         # Already updated, declined
         installed_ver = new_ver = '1.1.1'
         self.skill.handle_update_device(message)
-        self.skill.speak_dialog.assert_called_with(
+        self.skill.speak_dialog.assert_any_call(
             "up_to_date", {"version": "1 point 1 point 1"}, wait=True)
         self.skill.ask_yesno.assert_called_with("ask_update_anyways")
 
