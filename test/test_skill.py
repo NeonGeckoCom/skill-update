@@ -28,6 +28,7 @@
 
 import shutil
 import unittest
+from threading import Event
 from time import time
 
 import pytest
@@ -116,8 +117,10 @@ class TestSkill(unittest.TestCase):
                           context={"neon_should_respond": True})
         installed_ver = None
         new_ver = None
+        check_update_event = Event()
 
         def check_update(message: Message):
+            check_update_event.set()
             self.skill.bus.emit(message.response(
                 data={"installed_version": installed_ver,
                       "new_version": new_ver}))
@@ -143,6 +146,8 @@ class TestSkill(unittest.TestCase):
         # Already updated, declined
         installed_ver = new_ver = '1.1.1'
         self.skill.handle_update_device(message)
+        self.assertTrue(check_update_event.is_set())
+        check_update_event.clear()
         self.skill.speak_dialog.assert_any_call(
             "up_to_date", {"version": "1 point 1 point 1"}, wait=True)
         self.skill.ask_yesno.assert_called_with("ask_update_anyways")
@@ -152,6 +157,8 @@ class TestSkill(unittest.TestCase):
         # Alpha update avaliable, declined
         new_ver = "1.2.1a4"
         self.skill.handle_update_device(message)
+        self.assertTrue(check_update_event.is_set())
+        check_update_event.clear()
         self.skill.ask_yesno.assert_called_with(
             "update_core", {"new": "1 point 2 point 1 alpha 4",
                             "old": "1 point 1 point 1"})
