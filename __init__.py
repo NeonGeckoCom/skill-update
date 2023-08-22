@@ -362,7 +362,8 @@ class UpdateSkill(NeonSkill):
         if resp and resp.data.get("update_available"):
             LOG.info("Squashfs update available")
             return True
-        LOG.debug("No Squashfs update")
+        elif resp:
+            LOG.debug(f"No Squashfs update (track={resp.data.get('track')}")
         return False
 
     def _check_package_update(self, message):
