@@ -491,7 +491,8 @@ class UpdateSkill(NeonSkill):
             update_track = self.translate("word_beta")
         else:
             update_track = self.translate("word_stable")
-        if include_prereleases == self.include_prerelease:  # Already Set
+        if include_prereleases == self.settings.get("include_prerelease"):
+            # Already explicitly configured in settings
             self.speak_dialog("update_track_already_set",
                               {"track": update_track})
             return
