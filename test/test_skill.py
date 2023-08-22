@@ -123,7 +123,8 @@ class TestSkill(unittest.TestCase):
                       "new_version": new_ver}))
 
         start_update = Mock()
-
+        self.skill.bus.remove_all_listeners("neon.core_updater.check_update")
+        self.skill.bus.remove_all_listeners("neon.core_updater.start_update")
         self.skill.bus.on("neon.core_updater.check_update", check_update)
         self.skill.bus.on("neon.core_updater.start_update", start_update)
 
@@ -167,6 +168,8 @@ class TestSkill(unittest.TestCase):
 
         # TODO: Test offline
 
+        self.skill.bus.remove_all_listeners("neon.core_updater.check_update")
+        self.skill.bus.remove_all_listeners("neon.core_updater.start_update")
         self.skill.ask_yesno = real_ask_yesno
 
     def test_handle_switch_update_track(self):
