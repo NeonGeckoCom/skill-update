@@ -189,7 +189,7 @@ class UpdateSkill(NeonSkill):
                 self.gui.show_notification(text,
                                            action="update.gui.install_update",
                                            callback_data=callback_data)
-        else:
+        elif self.check_python:
             LOG.debug("Checking latest core version")
             self._check_latest_core_release(message)
 
