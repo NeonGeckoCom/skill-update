@@ -134,8 +134,10 @@ class TestSkill(unittest.TestCase):
         # Already updated, declined
         installed_ver = new_ver = '1.1.1'
         self.skill.handle_update_device(message)
-        self.skill.ask_yesno.assert_called_with("up_to_date",
-                                                {"version": "1 point 1 point 1"})
+        self.skill.speak_dialog.assert_called_with(
+            "up_to_date", {"version": "1 point 1 point 1"}, wait=True)
+        self.skill.ask_yesno.assert_called_with("ask_update_anyways")
+
         self.skill.speak_dialog.assert_called_with("not_updating")
 
         # Alpha update avaliable, declined
