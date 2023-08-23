@@ -32,6 +32,7 @@ from random import randint
 from typing import Optional
 from adapt.intent import IntentBuilder
 from neon_utils.validator_utils import numeric_confirmation_validator
+from ovos_bus_client.message import dig_for_message, Message
 from ovos_utils import classproperty
 from ovos_utils.log import LOG
 from ovos_utils.process_utils import RuntimeRequirements
@@ -44,7 +45,8 @@ from ovos_workshop.decorators import intent_file_handler, intent_handler
 class UpdateSkill(NeonSkill):
     def __init__(self, **kwargs):
         NeonSkill.__init__(self, **kwargs)
-        self.current_core_ver = None
+        # TODO: Move current ver to property with safe return
+        self._current_core_ver = None
         self.latest_core_ver = None
         self._update_filename = "update_signal"
         self._os_updates_supported = None
@@ -68,6 +70,22 @@ class UpdateSkill(NeonSkill):
                                    no_internet_fallback=False,
                                    no_network_fallback=False,
                                    no_gui_fallback=True)
+
+    @property
+    def current_core_ver(self):
+        if not self._current_core_ver:
+            message = (dig_for_message() or Message("")).forward(
+                "neon.core_updater.get_version")
+            resp = self.bus.wait_for_response(message)
+            if resp:
+                self._current_core_ver = resp.data.get("version")
+        if not self._current_core_ver:
+            LOG.error("Installed core version unknown!")
+        return self._current_core_ver
+
+    @current_core_ver.setter
+    def current_core_ver(self, val: str):
+        self._current_core_ver = val
 
     @property
     def default_prerelease(self) -> bool:
@@ -249,6 +267,8 @@ class UpdateSkill(NeonSkill):
         """
         Format a version spec into a speakable string
         """
+        if version is None:
+            raise ValueError("Expected string but got None")
         if 'a' in version:
             version = version.replace('a', f' {self.translate("alpha")} ')
         if '.' in version:
