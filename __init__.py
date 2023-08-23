@@ -186,7 +186,7 @@ class UpdateSkill(NeonSkill):
             meta = self._check_squashfs_update(message)
         if isinstance(meta, dict) and self.notify_updates:
             # Core version since it matches old behavior and is more variable
-            core_ver = meta.get("core", {}).get("version")
+            core_ver = meta.get("core", {}).get("version", "")
             text = self.dialog_renderer.render("notify_os_update_available",
                                                {"version": core_ver})
             LOG.info(f"OS Update Available: {meta}")
