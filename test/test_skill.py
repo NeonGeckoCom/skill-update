@@ -28,6 +28,7 @@
 
 import shutil
 import unittest
+from threading import Event
 from time import time
 
 import pytest
@@ -72,6 +73,21 @@ class TestSkill(unittest.TestCase):
         from neon_utils.skills import NeonSkill
 
         self.assertIsInstance(self.skill, NeonSkill)
+        self.assertIsInstance(self.skill.default_prerelease, bool)
+        self.assertIsInstance(self.skill.os_updates_supported, bool)
+        self.assertIsInstance(self.skill.check_initramfs, bool)
+        self.assertIsInstance(self.skill.check_squashfs, bool)
+        self.assertIsInstance(self.skill.check_python, bool)
+        self.assertIsInstance(self.skill.notify_updates, bool)
+        self.assertEqual(self.skill.include_prerelease,
+                         self.skill.default_prerelease)
+        self.assertIsInstance(self.skill.image_url, str)
+        self.assertIsInstance(self.skill.image_drive, str)
+
+        self.skill.include_prerelease = True
+        self.assertTrue(self.skill.include_prerelease)
+        self.skill.include_prerelease = False
+        self.assertFalse(self.skill.include_prerelease)
 
     def test_handle_core_version(self):
         real_check_release = self.skill._check_latest_core_release
@@ -101,14 +117,17 @@ class TestSkill(unittest.TestCase):
                           context={"neon_should_respond": True})
         installed_ver = None
         new_ver = None
+        check_update_event = Event()
 
         def check_update(message: Message):
+            check_update_event.set()
             self.skill.bus.emit(message.response(
                 data={"installed_version": installed_ver,
                       "new_version": new_ver}))
 
         start_update = Mock()
-
+        self.skill.bus.remove_all_listeners("neon.core_updater.check_update")
+        self.skill.bus.remove_all_listeners("neon.core_updater.start_update")
         self.skill.bus.on("neon.core_updater.check_update", check_update)
         self.skill.bus.on("neon.core_updater.start_update", start_update)
 
@@ -116,16 +135,30 @@ class TestSkill(unittest.TestCase):
         self.skill.handle_update_device(message)
         self.skill.speak_dialog.assert_called_with("check_error")
 
+        # Specify Python updates only
+        self.skill.settings["update_initramfs"] = False
+        self.skill.settings["update_squashfs"] = False
+        self.skill.settings["update_python"] = True
+        self.assertFalse(self.skill.check_initramfs)
+        self.assertFalse(self.skill.check_squashfs)
+        self.assertTrue(self.skill.check_python)
+
         # Already updated, declined
         installed_ver = new_ver = '1.1.1'
         self.skill.handle_update_device(message)
-        self.skill.ask_yesno.assert_called_with("up_to_date",
-                                                {"version": "1 point 1 point 1"})
+        self.assertTrue(check_update_event.is_set())
+        check_update_event.clear()
+        self.skill.speak_dialog.assert_any_call(
+            "up_to_date", {"version": "1 point 1 point 1"}, wait=True)
+        self.skill.ask_yesno.assert_called_with("ask_update_anyways")
+
         self.skill.speak_dialog.assert_called_with("not_updating")
 
         # Alpha update avaliable, declined
         new_ver = "1.2.1a4"
         self.skill.handle_update_device(message)
+        self.assertTrue(check_update_event.is_set())
+        check_update_event.clear()
         self.skill.ask_yesno.assert_called_with(
             "update_core", {"new": "1 point 2 point 1 alpha 4",
                             "old": "1 point 1 point 1"})
@@ -142,6 +175,8 @@ class TestSkill(unittest.TestCase):
 
         # TODO: Test offline
 
+        self.skill.bus.remove_all_listeners("neon.core_updater.check_update")
+        self.skill.bus.remove_all_listeners("neon.core_updater.start_update")
         self.skill.ask_yesno = real_ask_yesno
 
     def test_handle_switch_update_track(self):

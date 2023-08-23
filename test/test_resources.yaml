@@ -61,6 +61,7 @@ dialog:
   - "error_unknown"
   - "no_image_file"
   - "no_valid_device"
+  - "ask_update_anyways"
 # regex entities, not necessarily filenames
 regex: []
 intents:
