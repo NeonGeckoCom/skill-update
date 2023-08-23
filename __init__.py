@@ -181,14 +181,19 @@ class UpdateSkill(NeonSkill):
         return self.settings.get("image_drive") or "/dev/sdb"
 
     def _on_ready(self, message):
-        if self.check_squashfs and self._check_squashfs_update(message):
-            if self.notify_updates:
-                text = self.dialog_renderer.render("notify_os_update_available")
-                LOG.info("OS Update Available")
-                callback_data = {**message.data, **{"notification": text}}
-                self.gui.show_notification(text,
-                                           action="update.gui.install_update",
-                                           callback_data=callback_data)
+        meta = None
+        if self.check_squashfs:
+            meta = self._check_squashfs_update(message)
+        if isinstance(meta, dict) and self.notify_updates:
+            # Core version since it matches old behavior and is more variable
+            core_ver = meta.get("core", {}).get("version")
+            text = self.dialog_renderer.render("notify_os_update_available",
+                                               {"version": core_ver})
+            LOG.info(f"OS Update Available: {meta}")
+            callback_data = {**message.data, **{"notification": text}}
+            self.gui.show_notification(text,
+                                       action="update.gui.install_update",
+                                       callback_data=callback_data)
         elif self.check_python:
             LOG.debug("Checking latest core version")
             self._check_latest_core_release(message)
@@ -351,9 +356,10 @@ class UpdateSkill(NeonSkill):
         LOG.debug("No initramfs update")
         return False
 
-    def _check_squashfs_update(self, message) -> bool:
+    def _check_squashfs_update(self, message) -> Optional[dict]:
         """
         Check for an updated squashfs image
+        @return: Dict metadata for new update if available, else None
         """
         resp = self.bus.wait_for_response(message.forward(
             "neon.check_update_squashfs",
@@ -361,10 +367,11 @@ class UpdateSkill(NeonSkill):
             timeout=10)
         if resp and resp.data.get("update_available"):
             LOG.info("Squashfs update available")
-            return True
+            meta = resp.data.get('update_metadata', dict())
+            return meta
         elif resp:
             LOG.debug(f"No Squashfs update (track={resp.data.get('track')}")
-        return False
+        return None
 
     def _check_package_update(self, message):
         self._check_latest_core_release(message)
