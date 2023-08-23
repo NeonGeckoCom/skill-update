@@ -266,17 +266,27 @@ class UpdateSkill(NeonSkill):
             self.speak_dialog("check_updates")
         initramfs_available = False
         squashfs_available = False
-
+        new_core_ver = None
         if self.check_initramfs:
             initramfs_available = self._check_initramfs_update(message)
             LOG.info(f"initramfs_available={initramfs_available}")
         if self.check_squashfs:
-            squashfs_available = (self._check_squashfs_update(message)
-                                  is not None)
+            meta = self._check_squashfs_update(message)
+            if isinstance(meta, dict):
+                # Core version since it matches old behavior and is more variable
+                new_core_ver = meta.get("core", {}).get("version", "")
+                squashfs_available = True
+
             LOG.info(f"squashfs_available={squashfs_available}")
 
         if initramfs_available or squashfs_available:
-            resp = self.ask_yesno("update_system")
+            if squashfs_available and new_core_ver:
+                resp = self.ask_yesno(
+                    "update_core",
+                    {"old": self.pronounce_version(self.current_core_ver),
+                     "new": self.pronounce_version(new_core_ver)})
+            else:
+                resp = self.ask_yesno("update_system")
             if resp == "yes":
                 self.speak_dialog("starting_update", wait=True)
                 self.gui.show_controlled_notification(
