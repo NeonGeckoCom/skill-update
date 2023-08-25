@@ -45,12 +45,12 @@ from ovos_workshop.decorators import intent_file_handler, intent_handler
 class UpdateSkill(NeonSkill):
     def __init__(self, **kwargs):
         NeonSkill.__init__(self, **kwargs)
-        # TODO: Move current ver to property with safe return
         self._current_core_ver = None
         self.latest_core_ver = None
         self._update_filename = "update_signal"
         self._os_updates_supported = None
         self._default_prerelease = None
+        self._updating = False
 
         self.add_event('mycroft.ready', self._on_ready)
         self.add_event("update.gui.continue_installation",
@@ -281,6 +281,10 @@ class UpdateSkill(NeonSkill):
         Handle a user request to check for updates.
         :param message: message object associated with request
         """
+        if self._updating:
+            LOG.warning("Requested update while already in-progress")
+            self.speak_dialog("update_in_progress")
+            return
         # Explicitly enabled for initramfs checks that involve file downloads
         if get_user_prefs(message)['response_mode'].get('hesitation'):
             self.speak_dialog("check_updates")
@@ -308,6 +312,7 @@ class UpdateSkill(NeonSkill):
             else:
                 resp = self.ask_yesno("update_system")
             if resp == "yes":
+                self._updating = True
                 self.speak_dialog("starting_update", wait=True)
                 self.gui.show_controlled_notification(
                     self.translate("notify_downloading_update"))
@@ -324,6 +329,8 @@ class UpdateSkill(NeonSkill):
                         self.speak_dialog("update_initramfs_success")
                         if squashfs_available:
                             self.speak_dialog("update_continuing")
+                        else:
+                            self._updating = False
                     else:
                         error = resp.data.get("error")
                         LOG.error(f"initramfs update failed: {error}")
@@ -346,6 +353,7 @@ class UpdateSkill(NeonSkill):
                                           {"help":
                                            self.translate("help_online")})
                         self.gui.remove_controlled_notification()
+                        self._updating = False
                         return
                     self.gui.remove_controlled_notification()
                     if resp.data.get("new_version"):
@@ -359,6 +367,7 @@ class UpdateSkill(NeonSkill):
                         LOG.error(f"squashfs update failed: {error}")
                         self.speak_dialog("error_updating_os")
                         self.gui.remove_controlled_notification()
+                        self._updating = False
                         return
                 self.gui.remove_controlled_notification()
             else:

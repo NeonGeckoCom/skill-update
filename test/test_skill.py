@@ -173,6 +173,11 @@ class TestSkill(unittest.TestCase):
         self.assertEqual(start_update.call_args[0][0].data,
                          {"version": new_ver})
 
+        # Update already in-progress
+        self.skill._updating = True
+        self.skill.handle_update_device(message)
+        self.skill.speak_dialog.assert_called_with("update_in_progress")
+
         # TODO: Test offline
 
         self.skill.bus.remove_all_listeners("neon.core_updater.check_update")
