@@ -332,12 +332,16 @@ class UpdateSkill(NeonSkill):
                         else:
                             self._updating = False
                     else:
-                        error = resp.data.get("error")
+                        try:
+                            error = resp.data.get("error")
+                        except AttributeError:
+                            error = "timeout"
                         LOG.error(f"initramfs update failed: {error}")
                         self.speak_dialog("error_updating_os",
                                           {"help":
                                            self.translate("help_support")})
                         self.gui.remove_controlled_notification()
+                        self._updating = False
                         return
                 if squashfs_available:
                     self._write_update_signal("squashfs")
