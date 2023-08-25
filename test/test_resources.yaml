@@ -62,6 +62,7 @@ dialog:
   - "no_image_file"
   - "no_valid_device"
   - "ask_update_anyways"
+  - "update_in_progress"
 # regex entities, not necessarily filenames
 regex: []
 intents:
