@@ -305,10 +305,15 @@ class UpdateSkill(NeonSkill):
 
         if initramfs_available or squashfs_available:
             if squashfs_available and new_core_ver:
-                resp = self.ask_yesno(
-                    "update_core",
-                    {"old": self.pronounce_version(self.current_core_ver),
-                     "new": self.pronounce_version(new_core_ver)})
+                if new_core_ver != self.current_core_ver:
+                    # New squashFS image with newer core package
+                    resp = self.ask_yesno(
+                        "update_core",
+                        {"old": self.pronounce_version(self.current_core_ver),
+                         "new": self.pronounce_version(new_core_ver)})
+                else:
+                    # New squashFS image without newer core package
+                    resp = self.ask_yesno("update_system")
             else:
                 resp = self.ask_yesno("update_system")
             if resp == "yes":
