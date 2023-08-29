@@ -291,6 +291,7 @@ class UpdateSkill(NeonSkill):
         initramfs_available = False
         squashfs_available = False
         new_core_ver = None
+        new_os_ver = None
         if self.check_initramfs:
             initramfs_available = self._check_initramfs_update(message)
             LOG.info(f"initramfs_available={initramfs_available}")
@@ -299,16 +300,26 @@ class UpdateSkill(NeonSkill):
             if isinstance(meta, dict):
                 # Core version since it matches old behavior and is more variable
                 new_core_ver = meta.get("core", {}).get("version", "")
+                new_os_ver = meta.get("image", {}).get("version", "")
                 squashfs_available = True
 
             LOG.info(f"squashfs_available={squashfs_available}")
 
         if initramfs_available or squashfs_available:
             if squashfs_available and new_core_ver:
-                resp = self.ask_yesno(
-                    "update_core",
-                    {"old": self.pronounce_version(self.current_core_ver),
-                     "new": self.pronounce_version(new_core_ver)})
+                if new_core_ver != self.current_core_ver:
+                    # New squashFS image with newer core package
+                    resp = self.ask_yesno(
+                        "update_core",
+                        {"old": self.pronounce_version(self.current_core_ver),
+                         "new": self.pronounce_version(new_core_ver)})
+                elif new_os_ver:
+                    resp = self.ask_yesno(
+                        "update_os",
+                        {"version": self.pronounce_version(new_os_ver)})
+                else:
+                    # New squashFS image without newer core package
+                    resp = self.ask_yesno("update_system")
             else:
                 resp = self.ask_yesno("update_system")
             if resp == "yes":
