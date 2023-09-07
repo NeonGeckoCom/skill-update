@@ -25,24 +25,25 @@
 # LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE,  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+import os
 import shutil
 import unittest
+import pytest
+
 from threading import Event
 from time import time
-
-import pytest
-import os
-import json
-
-from os import mkdir
-from os.path import dirname, join, exists
+from os.path import dirname, join
 from mock import Mock
 from ovos_bus_client import Message
 from ovos_utils.messagebus import FakeBus
 
 
 class TestSkill(unittest.TestCase):
+    test_fs = join(dirname(__file__), "skill_fs")
+    data_dir = join(test_fs, "data")
+    conf_dir = join(test_fs, "config")
+    os.environ["XDG_DATA_HOME"] = data_dir
+    os.environ["XDG_CONFIG_HOME"] = conf_dir
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -53,13 +54,13 @@ class TestSkill(unittest.TestCase):
         skill_loader = SkillLoader(bus, dirname(dirname(__file__)))
         skill_loader.load()
         cls.skill = skill_loader.instance
-        cls.test_fs = join(dirname(__file__), "skill_fs")
-        if not exists(cls.test_fs):
-            mkdir(cls.test_fs)
-        cls.skill.settings_write_path = cls.test_fs
-        cls.skill.file_system.path = cls.test_fs
-        cls.skill._init_settings()
-        cls.skill.initialize()
+
+        # cls.skill.settings_write_path = cls.test_fs
+        # cls.skill.file_system.path = cls.test_fs
+        # cls.skill._init_settings()
+        # cls.skill.initialize()
+        assert cls.skill._settings_path.startswith(cls.conf_dir)
+        assert cls.skill.file_system.path.startswith(cls.data_dir)
         # Override speak and speak_dialog to test passed arguments
         cls.skill.speak = Mock()
         cls.skill.speak_dialog = Mock()
