@@ -25,23 +25,25 @@
 # LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE,  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+import os
 import shutil
 import unittest
-from time import time
-
 import pytest
-import os
-import json
 
-from os import mkdir
-from os.path import dirname, join, exists
+from threading import Event
+from time import time
+from os.path import dirname, join
 from mock import Mock
 from ovos_bus_client import Message
 from ovos_utils.messagebus import FakeBus
 
 
 class TestSkill(unittest.TestCase):
+    test_fs = join(dirname(__file__), "skill_fs")
+    data_dir = join(test_fs, "data")
+    conf_dir = join(test_fs, "config")
+    os.environ["XDG_DATA_HOME"] = data_dir
+    os.environ["XDG_CONFIG_HOME"] = conf_dir
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -52,13 +54,13 @@ class TestSkill(unittest.TestCase):
         skill_loader = SkillLoader(bus, dirname(dirname(__file__)))
         skill_loader.load()
         cls.skill = skill_loader.instance
-        cls.test_fs = join(dirname(__file__), "skill_fs")
-        if not exists(cls.test_fs):
-            mkdir(cls.test_fs)
-        cls.skill.settings_write_path = cls.test_fs
-        cls.skill.file_system.path = cls.test_fs
-        cls.skill._init_settings()
-        cls.skill.initialize()
+
+        # cls.skill.settings_write_path = cls.test_fs
+        # cls.skill.file_system.path = cls.test_fs
+        # cls.skill._init_settings()
+        # cls.skill.initialize()
+        assert cls.skill._settings_path.startswith(cls.conf_dir)
+        assert cls.skill.file_system.path.startswith(cls.data_dir)
         # Override speak and speak_dialog to test passed arguments
         cls.skill.speak = Mock()
         cls.skill.speak_dialog = Mock()
@@ -72,6 +74,21 @@ class TestSkill(unittest.TestCase):
         from neon_utils.skills import NeonSkill
 
         self.assertIsInstance(self.skill, NeonSkill)
+        self.assertIsInstance(self.skill.default_prerelease, bool)
+        self.assertIsInstance(self.skill.os_updates_supported, bool)
+        self.assertIsInstance(self.skill.check_initramfs, bool)
+        self.assertIsInstance(self.skill.check_squashfs, bool)
+        self.assertIsInstance(self.skill.check_python, bool)
+        self.assertIsInstance(self.skill.notify_updates, bool)
+        self.assertEqual(self.skill.include_prerelease,
+                         self.skill.default_prerelease)
+        self.assertIsInstance(self.skill.image_url, str)
+        self.assertIsInstance(self.skill.image_drive, str)
+
+        self.skill.include_prerelease = True
+        self.assertTrue(self.skill.include_prerelease)
+        self.skill.include_prerelease = False
+        self.assertFalse(self.skill.include_prerelease)
 
     def test_handle_core_version(self):
         real_check_release = self.skill._check_latest_core_release
@@ -101,14 +118,17 @@ class TestSkill(unittest.TestCase):
                           context={"neon_should_respond": True})
         installed_ver = None
         new_ver = None
+        check_update_event = Event()
 
         def check_update(message: Message):
+            check_update_event.set()
             self.skill.bus.emit(message.response(
                 data={"installed_version": installed_ver,
                       "new_version": new_ver}))
 
         start_update = Mock()
-
+        self.skill.bus.remove_all_listeners("neon.core_updater.check_update")
+        self.skill.bus.remove_all_listeners("neon.core_updater.start_update")
         self.skill.bus.on("neon.core_updater.check_update", check_update)
         self.skill.bus.on("neon.core_updater.start_update", start_update)
 
@@ -116,16 +136,30 @@ class TestSkill(unittest.TestCase):
         self.skill.handle_update_device(message)
         self.skill.speak_dialog.assert_called_with("check_error")
 
+        # Specify Python updates only
+        self.skill.settings["update_initramfs"] = False
+        self.skill.settings["update_squashfs"] = False
+        self.skill.settings["update_python"] = True
+        self.assertFalse(self.skill.check_initramfs)
+        self.assertFalse(self.skill.check_squashfs)
+        self.assertTrue(self.skill.check_python)
+
         # Already updated, declined
         installed_ver = new_ver = '1.1.1'
         self.skill.handle_update_device(message)
-        self.skill.ask_yesno.assert_called_with("up_to_date",
-                                                {"version": "1 point 1 point 1"})
+        self.assertTrue(check_update_event.is_set())
+        check_update_event.clear()
+        self.skill.speak_dialog.assert_any_call(
+            "up_to_date", {"version": "1 point 1 point 1"}, wait=True)
+        self.skill.ask_yesno.assert_called_with("ask_update_anyways")
+
         self.skill.speak_dialog.assert_called_with("not_updating")
 
         # Alpha update avaliable, declined
         new_ver = "1.2.1a4"
         self.skill.handle_update_device(message)
+        self.assertTrue(check_update_event.is_set())
+        check_update_event.clear()
         self.skill.ask_yesno.assert_called_with(
             "update_core", {"new": "1 point 2 point 1 alpha 4",
                             "old": "1 point 1 point 1"})
@@ -140,8 +174,15 @@ class TestSkill(unittest.TestCase):
         self.assertEqual(start_update.call_args[0][0].data,
                          {"version": new_ver})
 
+        # Update already in-progress
+        self.skill._updating = True
+        self.skill.handle_update_device(message)
+        self.skill.speak_dialog.assert_called_with("update_in_progress")
+
         # TODO: Test offline
 
+        self.skill.bus.remove_all_listeners("neon.core_updater.check_update")
+        self.skill.bus.remove_all_listeners("neon.core_updater.start_update")
         self.skill.ask_yesno = real_ask_yesno
 
     def test_handle_switch_update_track(self):
@@ -382,7 +423,48 @@ class TestSkill(unittest.TestCase):
         on_notification_removed.assert_called_once()
         on_notification_set.assert_called_once()
         message = on_notification_set.call_args[0][0]
-        self.assertEqual(message.data['text'], 'OS Installation Failed')
+        self.assertEqual(message.data['text'],
+                         'OS Installation Failed: Unknown Error')
+        self.assertEqual(message.data['style'], 'error')
+        self.assertEqual(message.data['action'],
+                         'update.gui.finish_installation')
+
+        # `no_valid_device`, `no_image_file`, something else
+        failure = Message("neon.install_os_image.complete",
+                          {"success": False,
+                           "error": "no_valid_device"})
+        self.skill.bus.once("ovos.notification.api.set",
+                            on_notification_set)
+        self.skill.bus.emit(failure)
+        message = on_notification_set.call_args[0][0]
+        self.assertEqual(message.data['text'],
+                         'OS Installation Failed: No Device to Write')
+        self.assertEqual(message.data['style'], 'error')
+        self.assertEqual(message.data['action'],
+                         'update.gui.finish_installation')
+
+        failure = Message("neon.install_os_image.complete",
+                          {"success": False,
+                           "error": "no_image_file"})
+        self.skill.bus.once("ovos.notification.api.set",
+                            on_notification_set)
+        self.skill.bus.emit(failure)
+        message = on_notification_set.call_args[0][0]
+        self.assertEqual(message.data['text'],
+                         'OS Installation Failed: No Image to Write')
+        self.assertEqual(message.data['style'], 'error')
+        self.assertEqual(message.data['action'],
+                         'update.gui.finish_installation')
+
+        failure = Message("neon.install_os_image.complete",
+                          {"success": False,
+                           "error": "Some error"})
+        self.skill.bus.once("ovos.notification.api.set",
+                            on_notification_set)
+        self.skill.bus.emit(failure)
+        message = on_notification_set.call_args[0][0]
+        self.assertEqual(message.data['text'],
+                         'OS Installation Failed: Some error')
         self.assertEqual(message.data['style'], 'error')
         self.assertEqual(message.data['action'],
                          'update.gui.finish_installation')

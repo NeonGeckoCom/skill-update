@@ -1,12 +1,44 @@
 # Changelog
 
-## [2.0.1a1](https://github.com/NeonGeckoCom/skill-update/tree/2.0.1a1) (2023-08-15)
+## [2.1.1a1](https://github.com/NeonGeckoCom/skill-update/tree/2.1.1a1) (2023-09-07)
 
-[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/2.0.0...2.0.1a1)
+[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/2.0.2a4...2.1.1a1)
 
 **Merged pull requests:**
 
-- OS Update Check Backwards-Compat [\#67](https://github.com/NeonGeckoCom/skill-update/pull/67) ([NeonDaniel](https://github.com/NeonDaniel))
+- Troubleshoot unit test failures [\#77](https://github.com/NeonGeckoCom/skill-update/pull/77) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [2.0.2a4](https://github.com/NeonGeckoCom/skill-update/tree/2.0.2a4) (2023-08-29)
+
+[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/2.0.2a3...2.0.2a4)
+
+**Merged pull requests:**
+
+- Improved Update Dialog [\#74](https://github.com/NeonGeckoCom/skill-update/pull/74) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [2.0.2a3](https://github.com/NeonGeckoCom/skill-update/tree/2.0.2a3) (2023-08-25)
+
+[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/2.0.2a2...2.0.2a3)
+
+**Merged pull requests:**
+
+- Prevent multiple update processes [\#72](https://github.com/NeonGeckoCom/skill-update/pull/72) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [2.0.2a2](https://github.com/NeonGeckoCom/skill-update/tree/2.0.2a2) (2023-08-23)
+
+[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/2.0.2a1...2.0.2a2)
+
+**Merged pull requests:**
+
+- Improved OS Update handling and tests [\#70](https://github.com/NeonGeckoCom/skill-update/pull/70) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [2.0.2a1](https://github.com/NeonGeckoCom/skill-update/tree/2.0.2a1) (2023-08-17)
+
+[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/2.0.1...2.0.2a1)
+
+**Merged pull requests:**
+
+- Handle more descriptive error responses from reset plugin [\#69](https://github.com/NeonGeckoCom/skill-update/pull/69) ([NeonDaniel](https://github.com/NeonDaniel))
 
 
 
