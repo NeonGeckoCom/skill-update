@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.1a1](https://github.com/NeonGeckoCom/skill-update/tree/2.1.1a1) (2023-09-07)
+
+[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/2.0.2a4...2.1.1a1)
+
+**Merged pull requests:**
+
+- Troubleshoot unit test failures [\#77](https://github.com/NeonGeckoCom/skill-update/pull/77) ([NeonDaniel](https://github.com/NeonDaniel))
+
 ## [2.0.2a4](https://github.com/NeonGeckoCom/skill-update/tree/2.0.2a4) (2023-08-29)
 
 [Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/2.0.2a3...2.0.2a4)
