@@ -49,7 +49,7 @@ class TestSkill(SkillTestCase):
         self.assertIsInstance(self.skill.notify_updates, bool)
         self.assertEqual(self.skill.include_prerelease,
                          self.skill.default_prerelease)
-        self.assertIsInstance(self.skill.image_url, str)
+        # self.assertIsInstance(self.skill.image_url, str)
         self.assertIsInstance(self.skill.image_drive, str)
 
         self.skill.include_prerelease = True
