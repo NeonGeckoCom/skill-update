@@ -362,6 +362,7 @@ class UpdateSkill(NeonSkill):
                         message.forward("neon.update_squashfs",
                                         {"track": track}), timeout=1800)
                     if not resp:
+                        # TODO: Notify plugin we're aborting update
                         LOG.warning(f"Timed out waiting for download")
                         self.gui.remove_controlled_notification()
                         self.speak_dialog("error_updating_os",
