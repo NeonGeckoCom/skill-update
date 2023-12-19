@@ -39,7 +39,7 @@ from ovos_utils.process_utils import RuntimeRequirements
 from ovos_utils.network_utils import is_connected_http
 from neon_utils.skills import NeonSkill
 from neon_utils.user_utils import get_user_prefs
-from ovos_workshop.decorators import intent_file_handler, intent_handler
+from ovos_workshop.decorators import intent_handler
 
 
 class UpdateSkill(NeonSkill):
@@ -275,7 +275,7 @@ class UpdateSkill(NeonSkill):
             version = version.replace('.', f' {self.translate("point")} ')
         return version
 
-    @intent_file_handler("update_device.intent")
+    @intent_handler("update_device.intent")
     def handle_update_device(self, message):
         """
         Handle a user request to check for updates.
@@ -362,6 +362,7 @@ class UpdateSkill(NeonSkill):
                         message.forward("neon.update_squashfs",
                                         {"track": track}), timeout=1800)
                     if not resp:
+                        # TODO: Notify plugin we're aborting update
                         LOG.warning(f"Timed out waiting for download")
                         self.gui.remove_controlled_notification()
                         self.speak_dialog("error_updating_os",
@@ -495,7 +496,7 @@ class UpdateSkill(NeonSkill):
             return False
         return True
 
-    @intent_file_handler("core_version.intent")
+    @intent_handler("core_version.intent")
     def handle_core_version(self, message):
         """
         Handle a user request for the current installed version.
@@ -506,7 +507,7 @@ class UpdateSkill(NeonSkill):
         LOG.debug(version)
         self.speak_dialog("core_version", {"version": version})
 
-    @intent_file_handler("update_configuration.intent")
+    @intent_handler("update_configuration.intent")
     def handle_update_configuration(self, message):
         """
         Handle a user request to update default configuration
