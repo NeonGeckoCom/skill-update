@@ -25,50 +25,17 @@
 # LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE,  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import os
-import shutil
-import unittest
+
 import pytest
 
 from threading import Event
 from time import time
-from os.path import dirname, join
 from mock import Mock
 from ovos_bus_client import Message
-from ovos_utils.messagebus import FakeBus
+from neon_minerva.tests.skill_unit_test_base import SkillTestCase
 
 
-class TestSkill(unittest.TestCase):
-    test_fs = join(dirname(__file__), "skill_fs")
-    data_dir = join(test_fs, "data")
-    conf_dir = join(test_fs, "config")
-    os.environ["XDG_DATA_HOME"] = data_dir
-    os.environ["XDG_CONFIG_HOME"] = conf_dir
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        from mycroft.skills.skill_loader import SkillLoader
-
-        bus = FakeBus()
-        bus.run_in_thread()
-        skill_loader = SkillLoader(bus, dirname(dirname(__file__)))
-        skill_loader.load()
-        cls.skill = skill_loader.instance
-
-        # cls.skill.settings_write_path = cls.test_fs
-        # cls.skill.file_system.path = cls.test_fs
-        # cls.skill._init_settings()
-        # cls.skill.initialize()
-        assert cls.skill._settings_path.startswith(cls.conf_dir)
-        assert cls.skill.file_system.path.startswith(cls.data_dir)
-        # Override speak and speak_dialog to test passed arguments
-        cls.skill.speak = Mock()
-        cls.skill.speak_dialog = Mock()
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        shutil.rmtree(cls.test_fs)
-
+class TestSkill(SkillTestCase):
     def test_00_skill_init(self):
         # Test any parameters expected to be set in init or initialize methods
         from neon_utils.skills import NeonSkill
