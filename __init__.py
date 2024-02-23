@@ -270,9 +270,11 @@ class UpdateSkill(NeonSkill):
         if version is None:
             raise ValueError("Expected string but got None")
         if 'a' in version:
-            version = version.replace('a', f' {self.translate("alpha")} ')
+            version = version.replace(
+                'a', f' {self.resources.render_dialog("alpha")} ')
         if '.' in version:
-            version = version.replace('.', f' {self.translate("point")} ')
+            version = version.replace(
+                '.', f' {self.resources.render_dialog("point")} ')
         return version
 
     @intent_handler("update_device.intent")
@@ -326,7 +328,7 @@ class UpdateSkill(NeonSkill):
                 self._updating = True
                 self.speak_dialog("starting_update", wait=True)
                 self.gui.show_controlled_notification(
-                    self.translate("notify_downloading_update"))
+                    self.resources.render_dialog("notify_downloading_update"))
                 track = "dev" if self.include_prerelease else "master"
                 if initramfs_available:
                     LOG.info("Updating initramfs")
@@ -349,8 +351,8 @@ class UpdateSkill(NeonSkill):
                             error = "timeout"
                         LOG.error(f"initramfs update failed: {error}")
                         self.speak_dialog("error_updating_os",
-                                          {"help":
-                                           self.translate("help_support")})
+                                          {"help": self.resources.render_dialog(
+                                              "help_support")})
                         self.gui.remove_controlled_notification()
                         self._updating = False
                         return
@@ -366,8 +368,8 @@ class UpdateSkill(NeonSkill):
                         LOG.warning(f"Timed out waiting for download")
                         self.gui.remove_controlled_notification()
                         self.speak_dialog("error_updating_os",
-                                          {"help":
-                                           self.translate("help_online")})
+                                          {"help": self.resources.render_dialog(
+                                              "help_online")})
                         self.gui.remove_controlled_notification()
                         self._updating = False
                         return
@@ -538,7 +540,7 @@ class UpdateSkill(NeonSkill):
                                           {"url": self.image_url}))
             self.speak_dialog("drive_instructions")
             self.gui.show_controlled_notification(
-                self.translate("notify_downloading_os"))
+                self.resources.render_dialog("notify_downloading_os"))
         else:
             self.speak_dialog("not_updating")
 
@@ -552,9 +554,9 @@ class UpdateSkill(NeonSkill):
         include_prereleases = True if message.data.get('beta') else False
         LOG.debug(f"Update to include_prerelease={include_prereleases}")
         if include_prereleases:
-            update_track = self.translate("word_beta")
+            update_track = self.resources.render_dialog("word_beta")
         else:
-            update_track = self.translate("word_stable")
+            update_track = self.resources.render_dialog("word_stable")
         if include_prereleases == self.settings.get("include_prerelease"):
             # Already explicitly configured in settings
             self.speak_dialog("update_track_already_set",
@@ -571,9 +573,9 @@ class UpdateSkill(NeonSkill):
                 message.forward("neon.update.check"))
         else:
             if self.include_prerelease:
-                update_track = self.translate("word_beta")
+                update_track = self.resources.render_dialog("word_beta")
             else:
-                update_track = self.translate("word_stable")
+                update_track = self.resources.render_dialog("word_stable")
             self.speak_dialog("confirm_no_change_update_track",
                               {"track": update_track})
 
@@ -587,7 +589,7 @@ class UpdateSkill(NeonSkill):
         self.gui.remove_controlled_notification()
         if message.data.get("success"):
             LOG.info(f"Showing Download Complete Notification")
-            text = self.translate("notify_download_complete")
+            text = self.resources.render_dialog("notify_download_complete")
             self.gui.show_notification(
                 content=text,
                 action="update.gui.continue_installation",
@@ -595,7 +597,7 @@ class UpdateSkill(NeonSkill):
 
         else:
             LOG.info(f"Showing Download Failed Notification")
-            text = self.translate("notify_download_failed")
+            text = self.resources.render_dialog("notify_download_failed")
             self.gui.show_notification(content=text,
                                        style="error",
                                        callback_data={**message.data,
@@ -626,7 +628,7 @@ class UpdateSkill(NeonSkill):
             self.bus.emit(message.forward(
                 "ovos.notification.api.set.controlled",
                 {"sender": self.skill_id,
-                 "text": self.translate("notify_writing_image")}))
+                 "text": self.resources.render_dialog("notify_writing_image")}))
         else:
             self.speak_dialog("not_updating")
 
@@ -640,7 +642,7 @@ class UpdateSkill(NeonSkill):
             "ovos.notification.api.remove.controlled"))
         if message.data.get("success"):
             LOG.info("Showing Write Complete Notification")
-            text = self.translate("notify_installation_complete")
+            text = self.resources.render_dialog("notify_installation_complete")
             self.gui.show_notification(content=text,
                                        action="update.gui.finish_installation",
                                        callback_data={**message.data,
@@ -650,8 +652,8 @@ class UpdateSkill(NeonSkill):
             error = message.data.get("error") or "error_unknown"
             # `no_valid_device`, `no_image_file`, something else
             LOG.info(f"Showing Write Failed Notification: {error}")
-            text = self.translate("notify_installation_failed",
-                                  {"error": self.translate(error)})
+            text = self.resources.render_dialog("notify_installation_failed", {
+                "error": self.resources.render_dialog(error)})
             self.gui.show_notification(content=text,
                                        action="update.gui.finish_installation",
                                        style="error",
