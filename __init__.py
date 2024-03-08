@@ -99,7 +99,7 @@ class UpdateSkill(NeonSkill):
                 import json
                 with open("/opt/neon/build_info.json") as f:
                     image_meta = json.load(f)
-                self._default_prerelease = 'a' in image_meta['core']['version']
+                self._default_prerelease = 'b' in image_meta['build_version']
                 LOG.info(f"Determined image prerelease status: "
                          f"{self._default_prerelease}")
             except Exception as e:
@@ -214,7 +214,7 @@ class UpdateSkill(NeonSkill):
                                        callback_data=callback_data)
         elif self.check_python:
             LOG.debug("Checking latest core version")
-            self._check_latest_core_release(message)
+            self._check_latest_release(message)
 
         update_stat = self._check_update_status()
         LOG.debug(f"Update status is {update_stat}")
@@ -231,12 +231,17 @@ class UpdateSkill(NeonSkill):
             self.speak_dialog("notify_update_failure",
                               {"version": speak_version})
 
-    def _check_latest_core_release(self, message):
+    def _check_latest_release(self, message):
         """
         Handles checking for a new release version
         :param message: message object associated with loaded emit
         """
-        response = self.bus.wait_for_response(
+        response = None
+        if self.os_updates_supported:
+            response = self.bus.wait_for_response(message.forward(
+                "neon.device_updater.check_update",
+                {'include_prerelease': self.include_prerelease}), timeout=15)
+        response = response or self.bus.wait_for_response(
             message.forward("neon.core_updater.check_update",
                             {'include_prerelease': self.include_prerelease}),
             timeout=15)
@@ -272,6 +277,9 @@ class UpdateSkill(NeonSkill):
         if 'a' in version:
             version = version.replace(
                 'a', f' {self.resources.render_dialog("alpha")} ')
+        if 'b' in version:
+            version = version.replace(
+                'b', f' {self.resources.render_dialog("beta")} ')
         if '.' in version:
             version = version.replace(
                 '.', f' {self.resources.render_dialog("point")} ')
@@ -302,23 +310,24 @@ class UpdateSkill(NeonSkill):
             if isinstance(meta, dict):
                 # Core version since it matches old behavior and is more variable
                 new_core_ver = meta.get("core", {}).get("version", "")
-                new_os_ver = meta.get("image", {}).get("version", "")
+                new_os_ver = meta.get(
+                    'build_version') or meta.get("image", {}).get("version", "")
                 squashfs_available = True
 
             LOG.info(f"squashfs_available={squashfs_available}")
 
         if initramfs_available or squashfs_available:
             if squashfs_available and new_core_ver:
-                if new_core_ver != self.current_core_ver:
+                if new_os_ver:
+                    resp = self.ask_yesno(
+                        "update_os",
+                        {"version": self.pronounce_version(new_os_ver)})
+                elif new_core_ver != self.current_core_ver:
                     # New squashFS image with newer core package
                     resp = self.ask_yesno(
                         "update_core",
                         {"old": self.pronounce_version(self.current_core_ver),
                          "new": self.pronounce_version(new_core_ver)})
-                elif new_os_ver:
-                    resp = self.ask_yesno(
-                        "update_os",
-                        {"version": self.pronounce_version(new_os_ver)})
                 else:
                     # New squashFS image without newer core package
                     resp = self.ask_yesno("update_system")
@@ -432,7 +441,7 @@ class UpdateSkill(NeonSkill):
         return None
 
     def _check_package_update(self, message):
-        self._check_latest_core_release(message)
+        self._check_latest_release(message)
         if not all((self.current_core_ver, self.latest_core_ver)):
             self.speak_dialog("check_error")
             return
@@ -504,7 +513,7 @@ class UpdateSkill(NeonSkill):
         Handle a user request for the current installed version.
         :param message: message object associated with request
         """
-        self._check_latest_core_release(message)
+        self._check_latest_release(message)
         version = self.pronounce_version(self.current_core_ver)
         LOG.debug(version)
         self.speak_dialog("core_version", {"version": version})
@@ -569,7 +578,7 @@ class UpdateSkill(NeonSkill):
             self.include_prerelease = include_prereleases
             self.speak_dialog("confirm_change_update_track",
                               {"track": update_track})
-            self._check_latest_core_release(
+            self._check_latest_release(
                 message.forward("neon.update.check"))
         else:
             if self.include_prerelease:
