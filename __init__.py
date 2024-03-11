@@ -398,9 +398,9 @@ class UpdateSkill(NeonSkill):
                     else:
                         error = "no response"
                         if resp:
-                            error = resp.data.get("error")
+                            error = resp.data.get("error") or resp.data
                         LOG.error(f"squashfs update failed: {error}")
-                        self.speak_dialog("error_updating_os")
+                        self.speak_dialog("error_updating_os", {"help": ""})
                         self.gui.remove_controlled_notification()
                         self._updating = False
                         return

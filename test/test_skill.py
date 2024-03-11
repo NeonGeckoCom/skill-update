@@ -148,6 +148,8 @@ class TestSkill(SkillTestCase):
 
         # TODO: Test offline
 
+        # TODO: Test initramfs update success/error, squashfs errors
+
         self.skill.bus.remove_all_listeners("neon.core_updater.check_update")
         self.skill.bus.remove_all_listeners("neon.core_updater.start_update")
         self.skill.ask_yesno = real_ask_yesno
