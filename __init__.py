@@ -57,7 +57,8 @@ class UpdateSkill(NeonSkill):
                        self.continue_os_installation)
         self.add_event("update.gui.finish_installation",
                        self.finish_os_installation)
-        self.add_event("update.gui.install_update", self.handle_update_device)
+        self.add_event("update.gui.install_update",
+                       self.handle_update_device)
 
     @classproperty
     def runtime_requirements(self):
@@ -72,19 +73,19 @@ class UpdateSkill(NeonSkill):
                                    no_gui_fallback=True)
 
     @property
-    def current_ver(self):
+    def current_ver(self) -> str:
         if not self._current_ver:
             message = (dig_for_message() or Message(""))
             if self.os_updates_supported:
                 resp = self.bus.wait_for_response(message.forward(
-                    "neon.device_updater.get_build_info"))
+                    "neon.device_updater.get_build_info"), timeout=15)
                 if resp:
                     self._current_ver = resp.data.get("build_version") or \
                         resp.data.get("core", {}).get("version")
                     LOG.info(f"Got build version: {self._current_ver}")
                     return self._current_ver
             resp = self.bus.wait_for_response(message.forward(
-                "neon.core_updater.get_version"))
+                "neon.core_updater.get_version"), timeout=15)
             if resp:
                 self._current_ver = resp.data.get("version")
         if not self._current_ver:
@@ -229,7 +230,11 @@ class UpdateSkill(NeonSkill):
         if not update_stat:
             # No update was attempted
             return
-        speak_version = self.pronounce_version(self.current_ver)
+        try:
+            speak_version = self.pronounce_version(self.current_ver)
+        except Exception as e:
+            LOG.error(e)
+            speak_version = ""
         if update_stat is True:
             LOG.debug("Update success")
             self.speak_dialog("notify_update_success",
