@@ -46,7 +46,7 @@ class UpdateSkill(NeonSkill):
     def __init__(self, **kwargs):
         NeonSkill.__init__(self, **kwargs)
         self._current_ver = None
-        self.latest_core_ver = None
+        self.latest_ver = None
         self._update_filename = "update_signal"
         self._os_updates_supported = None
         self._default_prerelease = None
@@ -261,17 +261,17 @@ class UpdateSkill(NeonSkill):
         if response:
             LOG.debug(f"Got response: {response.data}")
             self.current_ver = response.data.get("installed_version")
-            self.latest_core_ver = response.data.get("latest_version") or \
+            self.latest_ver = response.data.get("latest_version") or \
                 response.data.get("new_version")
-            if not self.latest_core_ver:
+            if not self.latest_ver:
                 LOG.error(f"Expected string version and got none in response: "
                           f"{response.data}")
-            elif self.latest_core_ver != self.current_ver and \
+            elif self.latest_ver != self.current_ver and \
                     self.notify_updates and \
                     message.msg_type in ("mycroft.ready", "neon.update.check"):
                 text = self.dialog_renderer.render(
                     "notify_update_available",
-                    {"version": self.latest_core_ver})
+                    {"version": self.latest_ver})
                 LOG.info("Update Available")
                 callback_data = {**message.data, **{"notification": text}}
                 self.gui.show_notification(text,
@@ -455,7 +455,7 @@ class UpdateSkill(NeonSkill):
 
     def _check_package_update(self, message):
         self._check_latest_release(message)
-        if not all((self.current_ver, self.latest_core_ver)):
+        if not all((self.current_ver, self.latest_ver)):
             self.speak_dialog("check_error")
             return
 
@@ -465,7 +465,7 @@ class UpdateSkill(NeonSkill):
             self.speak_dialog("error_offline")
             return
 
-        if self.current_ver == self.latest_core_ver:
+        if self.current_ver == self.latest_ver:
             self.speak_dialog(
                 "up_to_date",
                 {"version": self.pronounce_version(self.current_ver)},
@@ -474,15 +474,15 @@ class UpdateSkill(NeonSkill):
         else:
             resp = self.ask_yesno(
                 "update_core",
-                {"new": self.pronounce_version(self.latest_core_ver),
+                {"new": self.pronounce_version(self.latest_ver),
                  "old": self.pronounce_version(self.current_ver)})
         if resp == "yes":
             if message.data.get('notification'):
                 self._dismiss_notification(message)
-            self._write_update_signal(self.latest_core_ver)
+            self._write_update_signal(self.latest_ver)
             self.speak_dialog("starting_update", wait=True)
             self.bus.emit(message.forward("neon.core_updater.start_update",
-                                          {"version": self.latest_core_ver}))
+                                          {"version": self.latest_ver}))
         else:
             self.speak_dialog("not_updating")
 
