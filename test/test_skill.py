@@ -58,23 +58,23 @@ class TestSkill(SkillTestCase):
         self.assertFalse(self.skill.include_prerelease)
 
     def test_handle_core_version(self):
-        real_check_release = self.skill._check_latest_core_release
-        self.skill._check_latest_core_release = Mock()
+        real_check_release = self.skill._check_latest_release
+        self.skill._check_latest_release = Mock()
         test_message = Message("")
 
         # No alpha version
-        self.skill.current_core_ver = "22.10.0"
+        self.skill.current_ver = "22.10.0"
         self.skill.handle_core_version(test_message)
-        self.skill._check_latest_core_release.assert_called_once_with(test_message)
+        self.skill._check_latest_release.assert_called_once_with(test_message)
         self.skill.speak_dialog.assert_called_with("core_version", {"version": "22 point 10 point 0"})
 
         # Alpha version
-        self.skill.current_core_ver = "22.10.1a10"
+        self.skill.current_ver = "22.10.1a10"
         self.skill.handle_core_version(test_message)
-        self.skill._check_latest_core_release.assert_called_with(test_message)
+        self.skill._check_latest_release.assert_called_with(test_message)
         self.skill.speak_dialog.assert_called_with("core_version", {"version": "22 point 10 point 1 alpha 10"})
 
-        self.skill._check_latest_core_release = real_check_release
+        self.skill._check_latest_release = real_check_release
 
     def test_handle_update_neon(self):
         real_ask_yesno = self.skill.ask_yesno
@@ -148,6 +148,8 @@ class TestSkill(SkillTestCase):
 
         # TODO: Test offline
 
+        # TODO: Test initramfs update success/error, squashfs errors
+
         self.skill.bus.remove_all_listeners("neon.core_updater.check_update")
         self.skill.bus.remove_all_listeners("neon.core_updater.start_update")
         self.skill.ask_yesno = real_ask_yesno
@@ -155,9 +157,9 @@ class TestSkill(SkillTestCase):
     def test_handle_switch_update_track(self):
         real_ask_yesno = self.skill.ask_yesno
         self.skill.ask_yesno = Mock()
-        real_check_release = self.skill._check_latest_core_release
+        real_check_release = self.skill._check_latest_release
         mock = Mock()
-        self.skill._check_latest_core_release = mock
+        self.skill._check_latest_release = mock
 
         # Test switch beta no change
         self.skill.include_prerelease = True
@@ -217,7 +219,7 @@ class TestSkill(SkillTestCase):
         mock.assert_called_once()
 
         self.skill.ask_yesno = real_ask_yesno
-        self.skill._check_latest_core_release = real_check_release
+        self.skill._check_latest_release = real_check_release
 
     def test_handle_create_os_media(self):
         real_ask_yesno = self.skill.ask_yesno

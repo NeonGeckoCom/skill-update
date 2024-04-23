@@ -45,8 +45,8 @@ from ovos_workshop.decorators import intent_handler
 class UpdateSkill(NeonSkill):
     def __init__(self, **kwargs):
         NeonSkill.__init__(self, **kwargs)
-        self._current_core_ver = None
-        self.latest_core_ver = None
+        self._current_ver = None
+        self.latest_ver = None
         self._update_filename = "update_signal"
         self._os_updates_supported = None
         self._default_prerelease = None
@@ -57,7 +57,8 @@ class UpdateSkill(NeonSkill):
                        self.continue_os_installation)
         self.add_event("update.gui.finish_installation",
                        self.finish_os_installation)
-        self.add_event("update.gui.install_update", self.handle_update_device)
+        self.add_event("update.gui.install_update",
+                       self.handle_update_device)
 
     @classproperty
     def runtime_requirements(self):
@@ -72,20 +73,28 @@ class UpdateSkill(NeonSkill):
                                    no_gui_fallback=True)
 
     @property
-    def current_core_ver(self):
-        if not self._current_core_ver:
-            message = (dig_for_message() or Message("")).forward(
-                "neon.core_updater.get_version")
-            resp = self.bus.wait_for_response(message)
+    def current_ver(self) -> str:
+        if not self._current_ver:
+            message = (dig_for_message() or Message(""))
+            if self.os_updates_supported:
+                resp = self.bus.wait_for_response(message.forward(
+                    "neon.device_updater.get_build_info"), timeout=15)
+                if resp:
+                    self._current_ver = resp.data.get("build_version") or \
+                        resp.data.get("core", {}).get("version")
+                    LOG.info(f"Got build version: {self._current_ver}")
+                    return self._current_ver
+            resp = self.bus.wait_for_response(message.forward(
+                "neon.core_updater.get_version"), timeout=15)
             if resp:
-                self._current_core_ver = resp.data.get("version")
-        if not self._current_core_ver:
+                self._current_ver = resp.data.get("version")
+        if not self._current_ver:
             LOG.error("Installed core version unknown!")
-        return self._current_core_ver
+        return self._current_ver
 
-    @current_core_ver.setter
-    def current_core_ver(self, val: str):
-        self._current_core_ver = val
+    @current_ver.setter
+    def current_ver(self, val: str):
+        self._current_ver = val
 
     @property
     def default_prerelease(self) -> bool:
@@ -99,7 +108,7 @@ class UpdateSkill(NeonSkill):
                 import json
                 with open("/opt/neon/build_info.json") as f:
                     image_meta = json.load(f)
-                self._default_prerelease = 'a' in image_meta['core']['version']
+                self._default_prerelease = 'b' in image_meta['build_version']
                 LOG.info(f"Determined image prerelease status: "
                          f"{self._default_prerelease}")
             except Exception as e:
@@ -203,10 +212,10 @@ class UpdateSkill(NeonSkill):
         if self.check_squashfs:
             meta = self._check_squashfs_update(message)
         if isinstance(meta, dict) and self.notify_updates:
-            # Core version since it matches old behavior and is more variable
-            core_ver = meta.get("core", {}).get("version", "")
+            version = meta.get("build_version") or \
+                      meta.get("core", {}).get("version", "")
             text = self.dialog_renderer.render("notify_os_update_available",
-                                               {"version": core_ver})
+                                               {"version": version})
             LOG.info(f"OS Update Available: {meta}")
             callback_data = {**message.data, **{"notification": text}}
             self.gui.show_notification(text,
@@ -214,14 +223,18 @@ class UpdateSkill(NeonSkill):
                                        callback_data=callback_data)
         elif self.check_python:
             LOG.debug("Checking latest core version")
-            self._check_latest_core_release(message)
+            self._check_latest_release(message)
 
         update_stat = self._check_update_status()
         LOG.debug(f"Update status is {update_stat}")
         if not update_stat:
             # No update was attempted
             return
-        speak_version = self.pronounce_version(self.current_core_ver)
+        try:
+            speak_version = self.pronounce_version(self.current_ver)
+        except Exception as e:
+            LOG.error(e)
+            speak_version = ""
         if update_stat is True:
             LOG.debug("Update success")
             self.speak_dialog("notify_update_success",
@@ -231,29 +244,34 @@ class UpdateSkill(NeonSkill):
             self.speak_dialog("notify_update_failure",
                               {"version": speak_version})
 
-    def _check_latest_core_release(self, message):
+    def _check_latest_release(self, message):
         """
         Handles checking for a new release version
         :param message: message object associated with loaded emit
         """
-        response = self.bus.wait_for_response(
+        response = None
+        if self.os_updates_supported:
+            response = self.bus.wait_for_response(message.forward(
+                "neon.device_updater.check_update",
+                {'include_prerelease': self.include_prerelease}), timeout=15)
+        response = response or self.bus.wait_for_response(
             message.forward("neon.core_updater.check_update",
                             {'include_prerelease': self.include_prerelease}),
             timeout=15)
         if response:
             LOG.debug(f"Got response: {response.data}")
-            self.current_core_ver = response.data.get("installed_version")
-            self.latest_core_ver = response.data.get("latest_version") or \
+            self.current_ver = response.data.get("installed_version")
+            self.latest_ver = response.data.get("latest_version") or \
                 response.data.get("new_version")
-            if not self.latest_core_ver:
+            if not self.latest_ver:
                 LOG.error(f"Expected string version and got none in response: "
                           f"{response.data}")
-            elif self.latest_core_ver != self.current_core_ver and \
+            elif self.latest_ver != self.current_ver and \
                     self.notify_updates and \
                     message.msg_type in ("mycroft.ready", "neon.update.check"):
                 text = self.dialog_renderer.render(
                     "notify_update_available",
-                    {"version": self.latest_core_ver})
+                    {"version": self.latest_ver})
                 LOG.info("Update Available")
                 callback_data = {**message.data, **{"notification": text}}
                 self.gui.show_notification(text,
@@ -270,9 +288,14 @@ class UpdateSkill(NeonSkill):
         if version is None:
             raise ValueError("Expected string but got None")
         if 'a' in version:
-            version = version.replace('a', f' {self.translate("alpha")} ')
+            version = version.replace(
+                'a', f' {self.resources.render_dialog("alpha")} ')
+        if 'b' in version:
+            version = version.replace(
+                'b', f' {self.resources.render_dialog("beta")} ')
         if '.' in version:
-            version = version.replace('.', f' {self.translate("point")} ')
+            version = version.replace(
+                '.', f' {self.resources.render_dialog("point")} ')
         return version
 
     @intent_handler("update_device.intent")
@@ -300,23 +323,24 @@ class UpdateSkill(NeonSkill):
             if isinstance(meta, dict):
                 # Core version since it matches old behavior and is more variable
                 new_core_ver = meta.get("core", {}).get("version", "")
-                new_os_ver = meta.get("image", {}).get("version", "")
+                new_os_ver = meta.get(
+                    'build_version') or meta.get("image", {}).get("version", "")
                 squashfs_available = True
 
             LOG.info(f"squashfs_available={squashfs_available}")
 
         if initramfs_available or squashfs_available:
             if squashfs_available and new_core_ver:
-                if new_core_ver != self.current_core_ver:
-                    # New squashFS image with newer core package
-                    resp = self.ask_yesno(
-                        "update_core",
-                        {"old": self.pronounce_version(self.current_core_ver),
-                         "new": self.pronounce_version(new_core_ver)})
-                elif new_os_ver:
+                if new_os_ver:
                     resp = self.ask_yesno(
                         "update_os",
                         {"version": self.pronounce_version(new_os_ver)})
+                elif new_core_ver != self.current_ver:
+                    # New squashFS image with newer core package
+                    resp = self.ask_yesno(
+                        "update_core",
+                        {"old": self.pronounce_version(self.current_ver),
+                         "new": self.pronounce_version(new_core_ver)})
                 else:
                     # New squashFS image without newer core package
                     resp = self.ask_yesno("update_system")
@@ -326,7 +350,7 @@ class UpdateSkill(NeonSkill):
                 self._updating = True
                 self.speak_dialog("starting_update", wait=True)
                 self.gui.show_controlled_notification(
-                    self.translate("notify_downloading_update"))
+                    self.resources.render_dialog("notify_downloading_update"))
                 track = "dev" if self.include_prerelease else "master"
                 if initramfs_available:
                     LOG.info("Updating initramfs")
@@ -349,8 +373,8 @@ class UpdateSkill(NeonSkill):
                             error = "timeout"
                         LOG.error(f"initramfs update failed: {error}")
                         self.speak_dialog("error_updating_os",
-                                          {"help":
-                                           self.translate("help_support")})
+                                          {"help": self.resources.render_dialog(
+                                              "help_support")})
                         self.gui.remove_controlled_notification()
                         self._updating = False
                         return
@@ -366,8 +390,8 @@ class UpdateSkill(NeonSkill):
                         LOG.warning(f"Timed out waiting for download")
                         self.gui.remove_controlled_notification()
                         self.speak_dialog("error_updating_os",
-                                          {"help":
-                                           self.translate("help_online")})
+                                          {"help": self.resources.render_dialog(
+                                              "help_online")})
                         self.gui.remove_controlled_notification()
                         self._updating = False
                         return
@@ -379,9 +403,9 @@ class UpdateSkill(NeonSkill):
                     else:
                         error = "no response"
                         if resp:
-                            error = resp.data.get("error")
+                            error = resp.data.get("error") or resp.data
                         LOG.error(f"squashfs update failed: {error}")
-                        self.speak_dialog("error_updating_os")
+                        self.speak_dialog("error_updating_os", {"help": ""})
                         self.gui.remove_controlled_notification()
                         self._updating = False
                         return
@@ -396,7 +420,7 @@ class UpdateSkill(NeonSkill):
             # OS already up to date
             self.speak_dialog("up_to_date",
                               {"version": self.pronounce_version(
-                                  self.current_core_ver)})
+                                  self.current_ver)})
 
     def _check_initramfs_update(self, message) -> bool:
         """
@@ -430,8 +454,8 @@ class UpdateSkill(NeonSkill):
         return None
 
     def _check_package_update(self, message):
-        self._check_latest_core_release(message)
-        if not all((self.current_core_ver, self.latest_core_ver)):
+        self._check_latest_release(message)
+        if not all((self.current_ver, self.latest_ver)):
             self.speak_dialog("check_error")
             return
 
@@ -441,24 +465,24 @@ class UpdateSkill(NeonSkill):
             self.speak_dialog("error_offline")
             return
 
-        if self.current_core_ver == self.latest_core_ver:
+        if self.current_ver == self.latest_ver:
             self.speak_dialog(
                 "up_to_date",
-                {"version": self.pronounce_version(self.current_core_ver)},
+                {"version": self.pronounce_version(self.current_ver)},
                 wait=True)
             resp = self.ask_yesno("ask_update_anyways")
         else:
             resp = self.ask_yesno(
                 "update_core",
-                {"new": self.pronounce_version(self.latest_core_ver),
-                 "old": self.pronounce_version(self.current_core_ver)})
+                {"new": self.pronounce_version(self.latest_ver),
+                 "old": self.pronounce_version(self.current_ver)})
         if resp == "yes":
             if message.data.get('notification'):
                 self._dismiss_notification(message)
-            self._write_update_signal(self.latest_core_ver)
+            self._write_update_signal(self.latest_ver)
             self.speak_dialog("starting_update", wait=True)
             self.bus.emit(message.forward("neon.core_updater.start_update",
-                                          {"version": self.latest_core_ver}))
+                                          {"version": self.latest_ver}))
         else:
             self.speak_dialog("not_updating")
 
@@ -490,9 +514,9 @@ class UpdateSkill(NeonSkill):
         if expected_ver == "squashfs":
             LOG.info("Updated squashFS")
             return True
-        if self.current_core_ver != expected_ver:
+        if self.current_ver != expected_ver:
             LOG.error(f"Update expected {expected_ver} but "
-                      f"{self.current_core_ver} is installed")
+                      f"{self.current_ver} is installed")
             return False
         return True
 
@@ -502,8 +526,8 @@ class UpdateSkill(NeonSkill):
         Handle a user request for the current installed version.
         :param message: message object associated with request
         """
-        self._check_latest_core_release(message)
-        version = self.pronounce_version(self.current_core_ver)
+        self._check_latest_release(message)
+        version = self.pronounce_version(self.current_ver)
         LOG.debug(version)
         self.speak_dialog("core_version", {"version": version})
 
@@ -538,7 +562,7 @@ class UpdateSkill(NeonSkill):
                                           {"url": self.image_url}))
             self.speak_dialog("drive_instructions")
             self.gui.show_controlled_notification(
-                self.translate("notify_downloading_os"))
+                self.resources.render_dialog("notify_downloading_os"))
         else:
             self.speak_dialog("not_updating")
 
@@ -552,9 +576,9 @@ class UpdateSkill(NeonSkill):
         include_prereleases = True if message.data.get('beta') else False
         LOG.debug(f"Update to include_prerelease={include_prereleases}")
         if include_prereleases:
-            update_track = self.translate("word_beta")
+            update_track = self.resources.render_dialog("word_beta")
         else:
-            update_track = self.translate("word_stable")
+            update_track = self.resources.render_dialog("word_stable")
         if include_prereleases == self.settings.get("include_prerelease"):
             # Already explicitly configured in settings
             self.speak_dialog("update_track_already_set",
@@ -567,13 +591,13 @@ class UpdateSkill(NeonSkill):
             self.include_prerelease = include_prereleases
             self.speak_dialog("confirm_change_update_track",
                               {"track": update_track})
-            self._check_latest_core_release(
+            self._check_latest_release(
                 message.forward("neon.update.check"))
         else:
             if self.include_prerelease:
-                update_track = self.translate("word_beta")
+                update_track = self.resources.render_dialog("word_beta")
             else:
-                update_track = self.translate("word_stable")
+                update_track = self.resources.render_dialog("word_stable")
             self.speak_dialog("confirm_no_change_update_track",
                               {"track": update_track})
 
@@ -587,7 +611,7 @@ class UpdateSkill(NeonSkill):
         self.gui.remove_controlled_notification()
         if message.data.get("success"):
             LOG.info(f"Showing Download Complete Notification")
-            text = self.translate("notify_download_complete")
+            text = self.resources.render_dialog("notify_download_complete")
             self.gui.show_notification(
                 content=text,
                 action="update.gui.continue_installation",
@@ -595,7 +619,7 @@ class UpdateSkill(NeonSkill):
 
         else:
             LOG.info(f"Showing Download Failed Notification")
-            text = self.translate("notify_download_failed")
+            text = self.resources.render_dialog("notify_download_failed")
             self.gui.show_notification(content=text,
                                        style="error",
                                        callback_data={**message.data,
@@ -626,7 +650,7 @@ class UpdateSkill(NeonSkill):
             self.bus.emit(message.forward(
                 "ovos.notification.api.set.controlled",
                 {"sender": self.skill_id,
-                 "text": self.translate("notify_writing_image")}))
+                 "text": self.resources.render_dialog("notify_writing_image")}))
         else:
             self.speak_dialog("not_updating")
 
@@ -640,7 +664,7 @@ class UpdateSkill(NeonSkill):
             "ovos.notification.api.remove.controlled"))
         if message.data.get("success"):
             LOG.info("Showing Write Complete Notification")
-            text = self.translate("notify_installation_complete")
+            text = self.resources.render_dialog("notify_installation_complete")
             self.gui.show_notification(content=text,
                                        action="update.gui.finish_installation",
                                        callback_data={**message.data,
@@ -650,8 +674,8 @@ class UpdateSkill(NeonSkill):
             error = message.data.get("error") or "error_unknown"
             # `no_valid_device`, `no_image_file`, something else
             LOG.info(f"Showing Write Failed Notification: {error}")
-            text = self.translate("notify_installation_failed",
-                                  {"error": self.translate(error)})
+            text = self.resources.render_dialog("notify_installation_failed", {
+                "error": self.resources.render_dialog(error)})
             self.gui.show_notification(content=text,
                                        action="update.gui.finish_installation",
                                        style="error",

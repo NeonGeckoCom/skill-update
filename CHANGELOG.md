@@ -1,20 +1,48 @@
 # Changelog
 
-## [2.1.2a2](https://github.com/NeonGeckoCom/skill-update/tree/2.1.2a2) (2023-12-19)
+## [2.1.3a5](https://github.com/NeonGeckoCom/skill-update/tree/2.1.3a5) (2024-04-22)
 
-[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/2.1.2a1...2.1.2a2)
+[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/2.1.3a4...2.1.3a5)
 
-**Merged pull requests:**
+**Fixed bugs:**
 
-- Refactor `intent_file_handler` to `intent_handler` to resolve warnings [\#81](https://github.com/NeonGeckoCom/skill-update/pull/81) ([NeonDaniel](https://github.com/NeonDaniel))
-
-## [2.1.2a1](https://github.com/NeonGeckoCom/skill-update/tree/2.1.2a1) (2023-12-19)
-
-[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/2.1.1...2.1.2a1)
+- \[BUG\] Updater claims the device is restarting before asking about the version to update to [\#73](https://github.com/NeonGeckoCom/skill-update/issues/73)
 
 **Merged pull requests:**
 
-- Update test case to extend class from minerva [\#80](https://github.com/NeonGeckoCom/skill-update/pull/80) ([NeonDaniel](https://github.com/NeonDaniel))
+- Update variables and dependencies [\#87](https://github.com/NeonGeckoCom/skill-update/pull/87) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [2.1.3a4](https://github.com/NeonGeckoCom/skill-update/tree/2.1.3a4) (2024-04-03)
+
+[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/2.1.3a3...2.1.3a4)
+
+**Merged pull requests:**
+
+- Resolve spoken errors after updating [\#86](https://github.com/NeonGeckoCom/skill-update/pull/86) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [2.1.3a3](https://github.com/NeonGeckoCom/skill-update/tree/2.1.3a3) (2024-03-11)
+
+[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/2.1.3a2...2.1.3a3)
+
+**Merged pull requests:**
+
+- Support NeonOS New Update Index [\#85](https://github.com/NeonGeckoCom/skill-update/pull/85) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [2.1.3a2](https://github.com/NeonGeckoCom/skill-update/tree/2.1.3a2) (2024-03-01)
+
+[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/2.1.3a1...2.1.3a2)
+
+**Merged pull requests:**
+
+- Update to latest ovos-workshop and remove deprecated references [\#84](https://github.com/NeonGeckoCom/skill-update/pull/84) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [2.1.3a1](https://github.com/NeonGeckoCom/skill-update/tree/2.1.3a1) (2024-02-05)
+
+[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/2.1.2...2.1.3a1)
+
+**Merged pull requests:**
+
+- Support ovos-utils 0.1 [\#83](https://github.com/NeonGeckoCom/skill-update/pull/83) ([NeonDaniel](https://github.com/NeonDaniel))
 
 
 
