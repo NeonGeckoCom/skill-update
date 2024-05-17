@@ -440,7 +440,7 @@ class UpdateSkill(NeonSkill):
             {"track": "dev" if self.include_prerelease else "master"}),
             timeout=10)
         if resp and resp.data.get("update_available"):
-            LOG.info("Initramfs update available")
+            LOG.info(f"Initramfs update available: {resp.data}")
             return True
         LOG.debug("No initramfs update")
         return False
