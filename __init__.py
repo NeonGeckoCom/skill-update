@@ -386,6 +386,9 @@ class UpdateSkill(NeonSkill):
                         self.speak_dialog("update_continuing")
                     else:
                         self._updating = False
+                        self.speak_dialog("up_to_date",
+                                          {"version": self.pronounce_version(
+                                              self.current_ver)})
 
                 if squashfs_available:
                     self._write_update_signal("squashfs")
