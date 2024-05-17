@@ -216,7 +216,7 @@ class UpdateSkill(NeonSkill):
                       meta.get("core", {}).get("version", "")
             text = self.dialog_renderer.render("notify_os_update_available",
                                                {"version": version})
-            LOG.info(f"OS Update Available: {meta}")
+            LOG.info(f"OS Update Available: {meta['build_version']}")
             callback_data = {**message.data, **{"notification": text}}
             self.gui.show_notification(text,
                                        action="update.gui.install_update",
@@ -359,25 +359,37 @@ class UpdateSkill(NeonSkill):
                         message.forward("neon.update_initramfs",
                                         {"force_update": True,
                                          "track": track}), timeout=60)
-                    if resp and resp.data.get("updated"):
-                        LOG.info("initramfs updated")
-                        self.speak_dialog("update_initramfs_success")
-                        if squashfs_available:
-                            self.speak_dialog("update_continuing")
-                        else:
-                            self._updating = False
-                    else:
-                        try:
-                            error = resp.data.get("error")
-                        except AttributeError:
-                            error = "timeout"
-                        LOG.error(f"initramfs update failed: {error}")
+                    if not resp:
+                        LOG.error(f"initramfs update timeout")
                         self.speak_dialog("error_updating_os",
                                           {"help": self.resources.render_dialog(
                                               "help_support")})
                         self.gui.remove_controlled_notification()
                         self._updating = False
                         return
+
+                    if resp.data.get("updated"):
+                        LOG.info("initramfs updated")
+                        self.speak_dialog("update_initramfs_success")
+                    elif resp.data.get("error"):
+                        LOG.warning(f"Error response: {resp.data}")
+                        self.speak_dialog("error_updating_os",
+                                          {"help": self.resources.render_dialog(
+                                              "help_support")})
+                        self.gui.remove_controlled_notification()
+                        self._updating = False
+                        return
+                    else:
+                        LOG.warning(f"Expected initramfs update: {resp.data}")
+
+                    if squashfs_available:
+                        self.speak_dialog("update_continuing")
+                    else:
+                        self._updating = False
+                        self.speak_dialog("up_to_date",
+                                          {"version": self.pronounce_version(
+                                              self.current_ver)})
+
                 if squashfs_available:
                     self._write_update_signal("squashfs")
 
@@ -431,7 +443,7 @@ class UpdateSkill(NeonSkill):
             {"track": "dev" if self.include_prerelease else "master"}),
             timeout=10)
         if resp and resp.data.get("update_available"):
-            LOG.info("Initramfs update available")
+            LOG.info(f"Initramfs update available: {resp.data}")
             return True
         LOG.debug("No initramfs update")
         return False
@@ -446,7 +458,7 @@ class UpdateSkill(NeonSkill):
             {"track": "dev" if self.include_prerelease else "master"}),
             timeout=10)
         if resp and resp.data.get("update_available"):
-            LOG.info("Squashfs update available")
+            LOG.info(f"Squashfs update available ({resp.data.get('track')})")
             meta = resp.data.get('update_metadata', dict())
             return meta
         elif resp:
