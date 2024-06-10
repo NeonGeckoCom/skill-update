@@ -29,6 +29,8 @@
 import os
 
 from random import randint
+from threading import Event
+from time import sleep
 from typing import Optional
 from adapt.intent import IntentBuilder
 from neon_utils.validator_utils import numeric_confirmation_validator
@@ -51,6 +53,7 @@ class UpdateSkill(NeonSkill):
         self._os_updates_supported = None
         self._default_prerelease = None
         self._updating = False
+        self._download_completed = Event()
 
         self.add_event('mycroft.ready', self._on_ready)
         self.add_event("update.gui.continue_installation",
@@ -392,36 +395,33 @@ class UpdateSkill(NeonSkill):
 
                 if squashfs_available:
                     self._write_update_signal("squashfs")
-
+                    self._download_completed.clear()
                     LOG.info("Updating squashfs")
-                    resp = self.bus.wait_for_response(
-                        message.forward("neon.update_squashfs",
-                                        {"track": track}), timeout=1800)
-                    if not resp:
-                        # TODO: Notify plugin we're aborting update
-                        LOG.warning(f"Timed out waiting for download")
-                        self.gui.remove_controlled_notification()
-                        self.speak_dialog("error_updating_os",
-                                          {"help": self.resources.render_dialog(
-                                              "help_online")})
-                        self.gui.remove_controlled_notification()
-                        self._updating = False
-                        return
+                    self.add_event("neon.update_squashfs.response",
+                                   self._handle_download_completed, once=True,
+                                   activation=True)
+                    self.bus.emit(message.forward("neon.update_squashfs",
+                                                  {"track": track}))
+                    while not self._download_completed.wait(1800):
+                        download_state_resp = (
+                            self.bus.wait_for_response(message.forward(
+                                "neon.device_updater.get_download_status")))
+                        if download_state_resp and \
+                                download_state_resp.data.get("downloading"):
+                            LOG.debug("Still downloading")
+                        elif download_state_resp and not \
+                                download_state_resp.data.get("downloading"):
+                            LOG.info(f"No active download")
+                            sleep(1)  # pad to ensure completed event is handled
+                            if not self._download_completed.is_set():
+                                LOG.error(f"Download completion not handled!")
+                                self._handle_download_failure()
+                        elif not download_state_resp:
+                            LOG.error(f"No response from updater plugin")
+                            self._handle_download_failure()
+                            return
+                else:
                     self.gui.remove_controlled_notification()
-                    if resp.data.get("new_version"):
-                        LOG.info("squashfs updated")
-                        self.speak_dialog("update_restarting", wait=True)
-                        self.bus.emit(message.forward("system.reboot"))
-                    else:
-                        error = "no response"
-                        if resp:
-                            error = resp.data.get("error") or resp.data
-                        LOG.error(f"squashfs update failed: {error}")
-                        self.speak_dialog("error_updating_os", {"help": ""})
-                        self.gui.remove_controlled_notification()
-                        self._updating = False
-                        return
-                self.gui.remove_controlled_notification()
             else:
                 # User declined update
                 self.speak_dialog("not_updating")
@@ -433,6 +433,27 @@ class UpdateSkill(NeonSkill):
             self.speak_dialog("up_to_date",
                               {"version": self.pronounce_version(
                                   self.current_ver)})
+
+    def _handle_download_failure(self):
+        self.speak_dialog("error_updating_os",
+                          {"help": self.resources.render_dialog(
+                              "help_online")})
+        self.gui.remove_controlled_notification()
+        self._updating = False
+
+    def _handle_download_completed(self, message):
+        self._download_completed.set()
+        self.gui.remove_controlled_notification()
+        if message.data.get("new_version"):
+            LOG.info("squashfs updated")
+            self.speak_dialog("update_restarting", wait=True)
+            self.bus.emit(message.forward("system.reboot"))
+        else:
+            error = message.data.get("error") or message.data
+            LOG.error(f"squashfs update failed: {error}")
+            self.speak_dialog("error_updating_os", {"help": ""})
+            self.gui.remove_controlled_notification()
+            self._updating = False
 
     def _check_initramfs_update(self, message) -> bool:
         """
