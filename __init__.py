@@ -402,7 +402,7 @@ class UpdateSkill(NeonSkill):
                                    activation=True)
                     self.bus.emit(message.forward("neon.update_squashfs",
                                                   {"track": track}))
-                    while not self._download_completed.wait(1800):
+                    while not self._download_completed.wait(300):
                         download_state_resp = (
                             self.bus.wait_for_response(message.forward(
                                 "neon.device_updater.get_download_status")))
