@@ -416,7 +416,9 @@ class UpdateSkill(NeonSkill):
                             if not self._download_completed.is_set():
                                 LOG.error(f"Download completion not handled!")
                                 self._handle_download_failure()
+                                return
                         elif not download_state_resp:
+                            # This could also be an older version of the plugin
                             LOG.error(f"No response from updater plugin")
                             self._handle_download_failure()
                             return
