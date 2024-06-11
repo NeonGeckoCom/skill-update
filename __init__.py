@@ -394,7 +394,6 @@ class UpdateSkill(NeonSkill):
                                               self.current_ver)})
 
                 if squashfs_available:
-                    self._write_update_signal("squashfs")
                     self._download_completed.clear()
                     LOG.info("Updating squashfs")
                     self.add_event("neon.update_squashfs.response",
@@ -446,6 +445,7 @@ class UpdateSkill(NeonSkill):
     def _handle_download_completed(self, message):
         self._download_completed.set()
         self.gui.remove_controlled_notification()
+        self._write_update_signal("squashfs")
         if message.data.get("new_version"):
             LOG.info("squashfs updated")
             self.speak_dialog("update_restarting", wait=True)
