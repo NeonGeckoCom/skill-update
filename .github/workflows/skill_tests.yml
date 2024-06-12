@@ -10,6 +10,9 @@ jobs:
     uses: neongeckocom/.github/.github/workflows/python_build_tests.yml@master
   skill_unit_tests:
     uses: neongeckocom/.github/.github/workflows/skill_tests.yml@master
+    with:
+      ovos_versions: "[]"
+      # TODO: Re-enable ovos tests after ovos-workshop 0.0.16
   skill_intent_tests:
     uses: neongeckocom/.github/.github/workflows/skill_test_intents.yml@master
     with:
