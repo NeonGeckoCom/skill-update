@@ -54,7 +54,7 @@ class UpdateSkill(NeonSkill):
         self._default_prerelease = None
         self._updating = False
         self._download_completed = Event()
-
+        self._download_check_interval = 300
         self.add_event('mycroft.ready', self._on_ready)
         self.add_event("update.gui.continue_installation",
                        self.continue_os_installation)
@@ -333,7 +333,7 @@ class UpdateSkill(NeonSkill):
             LOG.info(f"squashfs_available={squashfs_available}")
 
         if initramfs_available or squashfs_available:
-            if squashfs_available and new_core_ver:
+            if squashfs_available and (new_os_ver or new_core_ver):
                 if new_os_ver:
                     resp = self.ask_yesno(
                         "update_os",
@@ -401,7 +401,8 @@ class UpdateSkill(NeonSkill):
                                    activation=True)
                     self.bus.emit(message.forward("neon.update_squashfs",
                                                   {"track": track}))
-                    while not self._download_completed.wait(300):
+                    while not self._download_completed.wait(
+                            self._download_check_interval):
                         download_state_resp = (
                             self.bus.wait_for_response(message.forward(
                                 "neon.device_updater.get_download_status")))
@@ -436,13 +437,23 @@ class UpdateSkill(NeonSkill):
                                   self.current_ver)})
 
     def _handle_download_failure(self):
+        """
+        Handle update download failure. Speak error and clean up.
+        """
         self.speak_dialog("error_updating_os",
                           {"help": self.resources.render_dialog(
                               "help_online")})
         self.gui.remove_controlled_notification()
+        self.remove_event("neon.update_squashfs.response")
+        self._download_completed.set()
         self._updating = False
 
     def _handle_download_completed(self, message):
+        """
+        Handle update download completed. Speak success or error and restart to
+        apply a successful update.
+        @param message: `neon.update_squashfs.response` Message
+        """
         self._download_completed.set()
         self.gui.remove_controlled_notification()
         self._write_update_signal("squashfs")

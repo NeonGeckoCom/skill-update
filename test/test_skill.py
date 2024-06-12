@@ -28,11 +28,14 @@
 
 import pytest
 
-from threading import Event
-from time import time
+from os import environ
+from threading import Event, Thread
+from time import time, sleep
 from mock import Mock
 from ovos_bus_client import Message
 from neon_minerva.tests.skill_unit_test_base import SkillTestCase
+
+environ["TEST_SKILL_ENTRYPOINT"] = "skill-update.neongeckocom"
 
 
 class TestSkill(SkillTestCase):
@@ -76,7 +79,7 @@ class TestSkill(SkillTestCase):
 
         self.skill._check_latest_release = real_check_release
 
-    def test_handle_update_neon(self):
+    def test_handle_update_device(self):
         real_ask_yesno = self.skill.ask_yesno
         self.skill.ask_yesno = Mock()
         self.skill.ask_yesno.return_value = None
@@ -86,6 +89,9 @@ class TestSkill(SkillTestCase):
         installed_ver = None
         new_ver = None
         check_update_event = Event()
+        plugin_downloading = True
+        download_success = True
+        new_version = None
 
         def check_update(message: Message):
             check_update_event.set()
@@ -93,12 +99,24 @@ class TestSkill(SkillTestCase):
                 data={"installed_version": installed_ver,
                       "new_version": new_ver}))
 
+        def get_update_status(message: Message):
+            nonlocal plugin_downloading
+            nonlocal download_success
+            nonlocal new_version
+            if download_success and not plugin_downloading:
+                self.bus.emit(message.reply("neon.update_squashfs.response",
+                                            {"new_version": new_version}))
+                sleep(1)  # Allow some time for the skill handler
+            self.skill.bus.emit(message.response(
+                {"downloading": plugin_downloading}))
+
         start_update = Mock()
         self.skill.bus.remove_all_listeners("neon.core_updater.check_update")
         self.skill.bus.remove_all_listeners("neon.core_updater.start_update")
         self.skill.bus.on("neon.core_updater.check_update", check_update)
         self.skill.bus.on("neon.core_updater.start_update", start_update)
-
+        self.skill.bus.on("neon.device_updater.get_download_status",
+                          get_update_status)
         # Version check error
         self.skill.handle_update_device(message)
         self.skill.speak_dialog.assert_called_with("check_error")
@@ -146,13 +164,70 @@ class TestSkill(SkillTestCase):
         self.skill.handle_update_device(message)
         self.skill.speak_dialog.assert_called_with("update_in_progress")
 
-        # TODO: Test offline
+        # TODO: Test offline, initramfs update success/error
+        self.skill._download_check_interval = 1
+        self.skill._updating = False
+        self.skill.settings["update_squashfs"] = True
+        self.skill.settings["update_python"] = False
+        self.skill._check_squashfs_update = Mock(
+            return_value={"core": {"version": "old"}, "build_version": "new"})
 
-        # TODO: Test initramfs update success/error, squashfs errors
+        # Download error
+        real_failure = self.skill._handle_download_failure
+        self.skill._handle_download_failure = Mock(side_effect=real_failure)
+        t = Thread(target=self.skill.handle_update_device, args=(message,),
+                   daemon=True)
+        t.start()
+        sleep(1)
+        self.assertTrue(self.skill._updating)
+        self.assertFalse(self.skill._download_completed.is_set())
+        download_success = False
+        plugin_downloading = False
+        t.join(10)
+        self.skill._handle_download_failure.assert_called_once()
+        self.assertFalse(self.skill._updating)
+        self.assertTrue(self.skill._download_completed.is_set())
+
+        # Download failure
+        plugin_downloading = True
+        t = Thread(target=self.skill.handle_update_device, args=(message,),
+                   daemon=True)
+        t.start()
+        sleep(1)
+        self.skill.speak_dialog.assert_called_with("starting_update", wait=True)
+        self.assertFalse(self.skill._download_completed.is_set())
+        self.skill._updating = True
+
+        download_success = True
+        plugin_downloading = False
+        t.join(10)
+        self.assertTrue(self.skill._download_completed.is_set())
+        self.assertFalse(self.skill._updating)
+        self.skill.speak_dialog.assert_called_with("error_updating_os",
+                                                   {"help": ""})
+
+        # Download success
+        new_version = "1.0.0"
+        plugin_downloading = True
+        t = Thread(target=self.skill.handle_update_device, args=(message,),
+                   daemon=True)
+        t.start()
+        sleep(1)
+        self.skill.speak_dialog.assert_called_with("starting_update", wait=True)
+        self.assertFalse(self.skill._download_completed.is_set())
+        self.skill._updating = True
+
+        download_success = True
+        plugin_downloading = False
+        t.join(10)
+        self.assertTrue(self.skill._download_completed.is_set())
+        self.skill.speak_dialog.assert_called_with("update_restarting",
+                                                   wait=True)
 
         self.skill.bus.remove_all_listeners("neon.core_updater.check_update")
         self.skill.bus.remove_all_listeners("neon.core_updater.start_update")
         self.skill.ask_yesno = real_ask_yesno
+        self.skill._handle_download_failure = real_failure
 
     def test_handle_switch_update_track(self):
         real_ask_yesno = self.skill.ask_yesno
