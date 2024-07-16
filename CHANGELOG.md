@@ -1,48 +1,36 @@
 # Changelog
 
-## [2.1.3a5](https://github.com/NeonGeckoCom/skill-update/tree/2.1.3a5) (2024-04-22)
+## [3.1.0](https://github.com/NeonGeckoCom/skill-update/tree/3.1.0) (2024-07-16)
 
-[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/2.1.3a4...2.1.3a5)
+[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/3.0.1a2...3.1.0)
+
+**Implemented enhancements:**
+
+- \[FYI\] unexpected response after update [\#94](https://github.com/NeonGeckoCom/skill-update/issues/94)
+
+## [3.0.1a2](https://github.com/NeonGeckoCom/skill-update/tree/3.0.1a2) (2024-06-12)
+
+[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/3.0.1a1...3.0.1a2)
 
 **Fixed bugs:**
 
-- \[BUG\] Updater claims the device is restarting before asking about the version to update to [\#73](https://github.com/NeonGeckoCom/skill-update/issues/73)
+- \[BUG\] Reported error if update takes longer than 30 minutes [\#91](https://github.com/NeonGeckoCom/skill-update/issues/91)
 
 **Merged pull requests:**
 
-- Update variables and dependencies [\#87](https://github.com/NeonGeckoCom/skill-update/pull/87) ([NeonDaniel](https://github.com/NeonDaniel))
+- Handle longer-than-30m update downloads [\#93](https://github.com/NeonGeckoCom/skill-update/pull/93) ([NeonDaniel](https://github.com/NeonDaniel))
 
-## [2.1.3a4](https://github.com/NeonGeckoCom/skill-update/tree/2.1.3a4) (2024-04-03)
+## [3.0.1a1](https://github.com/NeonGeckoCom/skill-update/tree/3.0.1a1) (2024-05-17)
 
-[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/2.1.3a3...2.1.3a4)
+[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/3.0.0...3.0.1a1)
 
-**Merged pull requests:**
+**Fixed bugs:**
 
-- Resolve spoken errors after updating [\#86](https://github.com/NeonGeckoCom/skill-update/pull/86) ([NeonDaniel](https://github.com/NeonDaniel))
-
-## [2.1.3a3](https://github.com/NeonGeckoCom/skill-update/tree/2.1.3a3) (2024-03-11)
-
-[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/2.1.3a2...2.1.3a3)
+- \[BUG\] Reported issue with Neon trying to update to the same version [\#89](https://github.com/NeonGeckoCom/skill-update/issues/89)
 
 **Merged pull requests:**
 
-- Support NeonOS New Update Index [\#85](https://github.com/NeonGeckoCom/skill-update/pull/85) ([NeonDaniel](https://github.com/NeonDaniel))
-
-## [2.1.3a2](https://github.com/NeonGeckoCom/skill-update/tree/2.1.3a2) (2024-03-01)
-
-[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/2.1.3a1...2.1.3a2)
-
-**Merged pull requests:**
-
-- Update to latest ovos-workshop and remove deprecated references [\#84](https://github.com/NeonGeckoCom/skill-update/pull/84) ([NeonDaniel](https://github.com/NeonDaniel))
-
-## [2.1.3a1](https://github.com/NeonGeckoCom/skill-update/tree/2.1.3a1) (2024-02-05)
-
-[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/2.1.2...2.1.3a1)
-
-**Merged pull requests:**
-
-- Support ovos-utils 0.1 [\#83](https://github.com/NeonGeckoCom/skill-update/pull/83) ([NeonDaniel](https://github.com/NeonDaniel))
+- Improved error handling around update issues [\#90](https://github.com/NeonGeckoCom/skill-update/pull/90) ([NeonDaniel](https://github.com/NeonDaniel))
 
 
 
