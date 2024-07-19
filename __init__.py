@@ -397,8 +397,7 @@ class UpdateSkill(NeonSkill):
                     self._download_completed.clear()
                     LOG.info("Updating squashfs")
                     self.add_event("neon.update_squashfs.response",
-                                   self._handle_download_completed, once=True,
-                                   activation=True)
+                                   self._handle_download_completed, once=True)
                     self.bus.emit(message.forward("neon.update_squashfs",
                                                   {"track": track}))
                     while not self._download_completed.wait(

@@ -1,36 +1,12 @@
 # Changelog
 
-## [3.1.0](https://github.com/NeonGeckoCom/skill-update/tree/3.1.0) (2024-07-16)
+## [3.1.1a1](https://github.com/NeonGeckoCom/skill-update/tree/3.1.1a1) (2024-07-19)
 
-[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/3.0.1a2...3.1.0)
-
-**Implemented enhancements:**
-
-- \[FYI\] unexpected response after update [\#94](https://github.com/NeonGeckoCom/skill-update/issues/94)
-
-## [3.0.1a2](https://github.com/NeonGeckoCom/skill-update/tree/3.0.1a2) (2024-06-12)
-
-[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/3.0.1a1...3.0.1a2)
-
-**Fixed bugs:**
-
-- \[BUG\] Reported error if update takes longer than 30 minutes [\#91](https://github.com/NeonGeckoCom/skill-update/issues/91)
+[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/3.1.0...3.1.1a1)
 
 **Merged pull requests:**
 
-- Handle longer-than-30m update downloads [\#93](https://github.com/NeonGeckoCom/skill-update/pull/93) ([NeonDaniel](https://github.com/NeonDaniel))
-
-## [3.0.1a1](https://github.com/NeonGeckoCom/skill-update/tree/3.0.1a1) (2024-05-17)
-
-[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/3.0.0...3.0.1a1)
-
-**Fixed bugs:**
-
-- \[BUG\] Reported issue with Neon trying to update to the same version [\#89](https://github.com/NeonGeckoCom/skill-update/issues/89)
-
-**Merged pull requests:**
-
-- Improved error handling around update issues [\#90](https://github.com/NeonGeckoCom/skill-update/pull/90) ([NeonDaniel](https://github.com/NeonDaniel))
+- Fix ovos-workshop compat. bug in stable release [\#99](https://github.com/NeonGeckoCom/skill-update/pull/99) ([NeonDaniel](https://github.com/NeonDaniel))
 
 
 
