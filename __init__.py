@@ -32,7 +32,6 @@ from random import randint
 from threading import Event
 from time import sleep
 from typing import Optional
-from adapt.intent import IntentBuilder
 from neon_utils.validator_utils import numeric_confirmation_validator
 from ovos_bus_client.message import dig_for_message, Message
 from ovos_utils import classproperty
@@ -42,6 +41,7 @@ from ovos_utils.network_utils import is_connected_http
 from neon_utils.skills import NeonSkill
 from neon_utils.user_utils import get_user_prefs
 from ovos_workshop.decorators import intent_handler
+from ovos_workshop.intents import IntentBuilder
 
 
 class UpdateSkill(NeonSkill):
