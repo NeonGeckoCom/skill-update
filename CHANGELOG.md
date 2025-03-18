@@ -1,12 +1,20 @@
 # Changelog
 
-## [3.1.1a1](https://github.com/NeonGeckoCom/skill-update/tree/3.1.1a1) (2024-07-19)
+## [3.1.2a2](https://github.com/NeonGeckoCom/skill-update/tree/3.1.2a2) (2025-03-11)
 
-[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/3.1.0...3.1.1a1)
+[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/3.1.2a1...3.1.2a2)
 
 **Merged pull requests:**
 
-- Fix ovos-workshop compat. bug in stable release [\#99](https://github.com/NeonGeckoCom/skill-update/pull/99) ([NeonDaniel](https://github.com/NeonDaniel))
+- Update automation, gitignore, and license notices [\#102](https://github.com/NeonGeckoCom/skill-update/pull/102) ([NeonDaniel](https://github.com/NeonDaniel))
+
+## [3.1.2a1](https://github.com/NeonGeckoCom/skill-update/tree/3.1.2a1) (2024-09-17)
+
+[Full Changelog](https://github.com/NeonGeckoCom/skill-update/compare/3.1.1...3.1.2a1)
+
+**Merged pull requests:**
+
+- Update OVOS depdendencies for 0.x compat [\#101](https://github.com/NeonGeckoCom/skill-update/pull/101) ([NeonDaniel](https://github.com/NeonDaniel))
 
 
 
